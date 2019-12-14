@@ -1,0 +1,22 @@
+CONSIDERACIONES
+
+Contador de solicitudes -> para asignar ID
+Podemos tener otro contador para saber los usuarios que hay en la cola.
+Para cada usuario: ID, estado(atendido(p.ej usar 0), estoy siendo atendido...), tipo e HILO (Recomendado este último)
+Lista de 4 solicitudes en actividad social. (Está mal en el encunciado).
+Tenemos tres atendedores. 18 hilos, 1 por atendedor y uno por cada solicitud.
+Interesa hacer los atendedores como una lista, de cara a las tareas opcionales
+Mientras se atiende a un señor, este sigue ocupando el puesto en la cola
+SIGINT -> Finalizar. No dejar entrar a nadie más en la cola, y atender las solicitudes que hay en ella. Las solicitudes ya no podrán vincularse a una actividad cultural.
+PTHREAD_MUTEX_INITIALIZER & PTHREAD_COND_INITIALIZER. ¡¡¡¡¡Inicializar!!!!!
+Inicializar las estructuras de la cola a 0. Estara una posición vacía si por ejemplo el ID es 0.
+Usar función que recorra el array busque si hay un hueco.
+Generar aleatorio entre 0 y 100 para los porcentajes.
+Miramos el flag cada 3 segundos (pseudo espera activa) para ver si ya me han terminado de atender.
+Decide o no, aleatorio 50% probabilidad.
+Poner mutex en writeLogMessage.
+
+
+
+
+ 
