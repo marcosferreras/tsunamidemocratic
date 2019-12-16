@@ -15,6 +15,25 @@ Trabajando en:
 int cola[tamCola];
 //Vector con el identificador de los "usuarios destacados"
 int i[3]={1,2,3};
+//Defino las funciones
+void *despachoInvitador(void *ptr);
+void *despachoQR(void *ptr);
+void *despachoAtendedorPRO(void *ptr);
+
+/*
+ *	Main
+ */
+
+int main(){
+printf("tamCola: %d\n",tamCola);
+	//Encargados de las solicitudes de:
+	pthread_t invitador, QR, atendedorPRO;
+	//Creamos los hilos de los "usuarios destacados"
+	pthread_create(&invitador, NULL, despachoInvitador, (void *) &i[0]);
+	pthread_create(&QR, NULL, despachoQR, (void *) &i[1]);
+	pthread_create(&atendedorPRO, NULL, despachoAtendedorPRO, (void *) &i[2]);
+	sleep(1);
+}
 
 /*
  *	Funciones
@@ -35,18 +54,4 @@ void *despachoAtendedorPRO(void *ptr) {
 	printf("Soy el atendedorPRO\n");
 }
 
-/*
- *	Main
- */
-
-int main(){
-printf("tamCola: %d\n",tamCola);
-	//Encargados de las solicitudes de:
-	pthread_t invitador, QR, atendedorPRO;
-	//Creamos los hilos de los "usuarios destacados"
-	pthread_create(&invitador, NULL, despachoInvitador, (void *) &i[0]);
-	pthread_create(&QR, NULL, despachoQR, (void *) &i[1]);
-	pthread_create(&atendedorPRO, NULL, despachoAtendedorPRO, (void *) &i[2]);
-	sleep(1);
-}
 
