@@ -46,8 +46,8 @@ void *accionesCoordinadorSocial(void *ptr);
 void manejadoraSolicitud(int signal);
 void manejadoraFinalizar(int signal);
 void writeLogMessage (char *id , char *msg);
-void inicializarSolicitud(Solicitud* solicitud);
-void inicializarActividad(Actividad* actividad);
+//void inicializarSolicitud(Solicitud* solicitud);
+//void inicializarActividad(Actividad* actividad);
 //Cola de solicitudes
 Solicitud colaSolicitudes[tamCola];
 Actividad colaActividadSocial[4];
@@ -75,10 +75,10 @@ int main(){
 	//Tratamiento de señales
 	struct sigaction sSolicitud={0};
 	struct sigaction sFinalizar={0};
-	sSolicitud.sa_handler=manejadoraSolicitud;
+//	sSolicitud.sa_handler=manejadoraSolicitud;
 	sigaction(SIGUSR1,&sSolicitud,NULL);
 	sigaction(SIGUSR2,&sSolicitud,NULL);
-	sFinalizar.sa_handler=manejadoraFinalizar;
+//	sFinalizar.sa_handler=manejadoraFinalizar;
 	sigaction(SIGINT,&sFinalizar,NULL);
 	//Inicializar recursos	
 	srand(time(NULL));
@@ -87,18 +87,20 @@ int main(){
 	contadorActividadesCola=0;
 	listaCerrada=false;
 	logFile=NULL;
+/*
 	for(i=0;i<tamCola;i++){
 		inicializarSolicitud(&colaSolicitudes[i]);
 	}
 	for(i=0;i<4;i++){
 		inicializarActividad(&colaActividadSocial[i]);
 	}
+*/
 	//Inicializo los mutex
 	pthread_mutex_init(&mutexColaSocial,NULL);
 	pthread_mutex_init(&mutexLog, NULL);
 	pthread_mutex_init(&mutexColaSolicitudes, NULL);
 	//Encargados de las solicitudes:
-	pthread_t atendedor_1, atendedor_2, atendedor_3;
+	pthread_t atendedor_1, atendedor_2, atendedor_3, coordinador;
 	//Creamos los hilos de los atendedores
 	pthread_create(&atendedor_1, NULL, accionesAtendedor, (void *) &tipoAtendedor[0]);
 	pthread_create(&atendedor_2, NULL, accionesAtendedor, (void *) &tipoAtendedor[1]);
@@ -111,7 +113,38 @@ int main(){
 /*
  *	Funciones
  */
+void *accionesAtendedor(void *ptr){
+	char cadena[100];
 
+	
+}
+
+void *accionesCoordinadorSocial(void *ptr){
+
+
+}
+
+//Escribimos en el log
+void writeLogMessage (char *id , char *msg) {
+	pthread_mutex_lock(&mutexLog);
+	if(logFile==NULL){
+		logFile = fopen ("log.txt", "w") ;
+	} else {
+		logFile = fopen ("log.txt", "a") ;
+	}
+	// Calculamos la hora actual
+	time_t now = time (0) ;
+	struct tm *tlocal = localtime (&now) ;
+	char stnow [19];
+	strftime (stnow, 19, " %d/ %m/ %y %H: %M: %S " , tlocal) ;
+	// Escribimos en el log. La primera vez de cada ejecución, borrará el log.txt en caso de que exista.
+	fprintf (logFile , "[%s] %s : %s\n" , stnow , id , msg) ;
+	fclose (logFile);
+	pthread_mutex_unlock(&mutexLog); 
+}
+
+//Codigo reutilizable para las funciones
+/*
 //Funcion del hilo encargado de las invitaciones
 void *despachoInvitador(void *ptr) {
 	printf("Soy el encargado de las invitaciones\n");
@@ -151,23 +184,4 @@ void *despachoAtendedorPRO(void *ptr) {
 	num = (0+(rand()%(100)-0)+1);
 	printf("Soy el atendedorPRO\n");
 }
-
-//Escribimos en el log
-void writeLogMessage (char *id , char *msg) {
-	pthread_mutex_lock(&mutexLog);
-	if(logFile==NULL){
-		logFile = fopen ("log.txt", "w") ;
-	} else {
-		logFile = fopen ("log.txt", "a") ;
-	}
-	// Calculamos la hora actual
-	time_t now = time (0) ;
-	struct tm *tlocal = localtime (&now) ;
-	char stnow [19];
-	strftime (stnow, 19, " %d/ %m/ %y %H: %M: %S " , tlocal) ;
-	// Escribimos en el log. La primera vez de cada ejecución, borrará el log.txt en caso de que exista.
-	fprintf (logFile , "[%s] %s : %s\n" , stnow , id , msg) ;
-	fclose (logFile);
-	pthread_mutex_unlock(&mutexLog); 
-
-}
+*/
