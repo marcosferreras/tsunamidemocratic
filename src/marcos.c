@@ -18,10 +18,11 @@ void manejadoraFinalizar(int signal);
 void writeLogMessage (char *id , char *msg);
 pthread_mutex_t mutexLog;
 pthread_mutex_t mutexColaSolicitudes;
+pthread_mutex_t mutexColaSocial;
 FILE *logFile;
 typedef struct solicitud {
 	char id[50];
-	//0->Sin atender 1->En proceso de atención 2->Atendido
+	//0->Sin atender 1->En proceso de atención 2->Atendido 3->Atendido con Antecedentes
 	int atendido;
 	//Tipo 0->Invitación 1->QR
 	int tipo;
@@ -30,8 +31,19 @@ typedef struct solicitud {
 void inicializarSolicitud(Solicitud* solicitud);
 //Cola de solicitudes
 Solicitud colaSolicitudes[tamCola];
+typedef struct actividad{
+	char idUsuario[50];
+	pthread_t hilo;
+} Actividad;
+void inicializarActividad(Actividad* actividad);
+Actividad colaActividadSocial[4];
 //Para la asignacion de ID a las solicitudes
 int contadorSolicitudes;
+//Para saber cuantos hay en cola
+int contadorSolicitudesCola;
+int contadorActividadesCola;
+//Para saber 
+int listaCerrada;
 
 /*
  *	Main
@@ -52,10 +64,17 @@ int main(){
 	//Inicializar recursos	
 	srand(time(NULL));
 	contadorSolicitudes=0;
+	contadorSolicitudesCola=0;
+	contadorActividadesCola=0;
+	listaCerrada=false;
 	logFile=NULL;
 	for(i=0;i<tamCola;i++){
 		inicializarSolicitud(&colaSolicitudes[i]);
 	}
+	for(i=0;i<4;i++){
+		inicializarActividad(&colaActividadSocial[i]);
+	}
+	pthread_mutex_init(&mutexColaSocial,NULL);
 	pthread_mutex_init(&mutexLog, NULL);
 	pthread_mutex_init(&mutexColaSolicitudes, NULL);
 	//Encargados de las solicitudes de:
@@ -139,6 +158,7 @@ void *accionesSolicitud(void *structSolicitud){
 	int enAtencion=0;
 	int aleatorio;
 	int participo;
+	char id[50];
 	
 	//strcpy(solicitud->id,"1");
 	//if(strcmp("0\0",solicitud->id)==0)	
@@ -152,6 +172,8 @@ void *accionesSolicitud(void *structSolicitud){
 	printf("ID %s : La solicitud de tipo %d esta esperando (4 segundos)\n", solicitud->id, solicitud->tipo);
 	sleep(4);
 	pthread_mutex_lock(&mutexColaSolicitudes);
+	//Copio el id
+	strcpy(id,solicitud->id);
 	enAtencion=solicitud->atendido;
 	//Mientras esté sin atender
 	while(enAtencion==0){
@@ -179,7 +201,8 @@ void *accionesSolicitud(void *structSolicitud){
 		aleatorio = rand()%101;
 		if(aleatorio<=15){
 			//TODO Escribir en log
-			printf("ID %s : La solicitud de tipo %d se ha eliminado por fallo de la aplicacion\n", solicitud->id, solicitud->tipo);
+			printf("ID %s : La solicitud de tipo %d se ha eliminado por fallo de la aplicacion\n", solicitud->id, solicitud->tipo);	
+			//TODO Pendiente de crear una función que me saque de la cola y reordene el array de la cola, para evitar huecos
 			inicializarSolicitud(solicitud);
 			pthread_exit(NULL);
 		}
@@ -197,10 +220,37 @@ void *accionesSolicitud(void *structSolicitud){
 		pthread_mutex_lock(&mutexColaSolicitudes);
 		enAtencion=solicitud->atendido;
 	}
-	//Al salir de este bucle no he soltado el mutex. En este punto lo desbloqueo, y decido si me uno a una actividad social o no.
+	//Al salir de este bucle no he soltado el mutex. En este punto lo desbloqueo, y decido si me uno a una actividad social o no (Si puedo).
+	enAtencion=solicitud->atendido;
 	pthread_mutex_unlock(&mutexColaSolicitudes);
-	participo=rand()%2;
-	//0->No participo 1->Si participo
+	if(enAtencion == 3){
+		participo=rand()%2;
+		//0->Si Participo 1->No Participo
+		if(participo==0){
+			//Libero hueco en solicitudes
+			inicializarSolicitud(solicitud);
+			pthread_mutex_lock(&mutexColaSocial);
+			while(listaCerrada==true && contadorActividadesCola>4){
+				pthread_mutex_unlock(&mutexColaSocial);
+				sleep(3);
+				pthread_mutex_lock(&mutexColaSocial);
+			}
+			//Copio el id del usuario a la actividad
+			strcpy(colaActividadSocial[contadorActividadesCola].idUsuario, id);
+			//Incremento el numero de actividades
+			contadorActividadesCola++;
+			
+		} else {
+			//Libero espacio en cola de solicitudes
+			//TODO Pendiente de crear una función que me saque de la cola y reordene el array de la cola, para evitar huecos
+			inicializarSolicitud(solicitud);
+		}
+		pthread_exit(NULL);
+	}
+	//Solicitud con antecedentes. Libero el hueco en la cola y finalizo hilo.
+	//TODO Pendiente de crear una función que me saque de la cola y reordene el array de la cola, para evitar huecos
+	inicializarSolicitud(solicitud);
+	pthread_exit(NULL);
 	
 	
 	
@@ -243,5 +293,10 @@ void inicializarSolicitud(Solicitud* solicitud){
 	solicitud->hilo=0;
 	pthread_mutex_unlock(&mutexColaSolicitudes);
 }
-
-
+/**
+ *@author Marcos Ferreras
+*/
+void inicializarActividad(Actividad* actividad){
+	pthread_mutex_lock(&mutexColaSocial);
+	strcpy(actividad->idUsuario, "0");
+}
