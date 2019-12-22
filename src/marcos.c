@@ -230,7 +230,7 @@ void *accionesSolicitud(void *structSolicitud){
 			//Libero hueco en solicitudes
 			inicializarSolicitud(solicitud);
 			pthread_mutex_lock(&mutexColaSocial);
-			while(listaCerrada==true && contadorActividadesCola>4){
+			while(listaCerrada==true){
 				pthread_mutex_unlock(&mutexColaSocial);
 				sleep(3);
 				pthread_mutex_lock(&mutexColaSocial);
