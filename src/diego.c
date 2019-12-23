@@ -132,22 +132,29 @@ void nuevaSolicitud(int signal){
 	Solicitud solicitud;
 	//Compruebo si se ha llenado la lista
 	if(contadorSolicitudesCola != tamCola){
-			//Introduzco el identificador con su valor y lo incremento
-			contadorSolicitudesCola++;
-			solicitud.id[contadorSolicitudesCola] = contadorSolicitudesCola;
-			solicitud.atendido = 0;
-			//Indico el tipo de solicitud segun la senial
-			//Invitacion
-			if(signal == SIGUSR1){
-				solicitud.tipo = 0;
-			//QR
-			}else{
-				solicitud.tipo = 1;
-			}
-			//Crear el hilo
-			//Mando la solicitud para ser procesada
-			pthread_create(&solicitud.hilo, NULL, accionesSolicitud, (void *) &solicitud.id[contadorSolicitudesCola]);
-		}	
+		//Introduzco el identificador con su valor y lo incremento
+		contadorSolicitudes++;
+		printf("Solicitud_%d añadida a la lista de solicitudes\n",contadorSolicitudes);
+		solicitud.id[contadorSolicitudes] = contadorSolicitudes;
+		printf("Solicitud_%d lista para ser atendida\n",contadorSolicitudes);
+		solicitud.atendido = 0;
+		//Indico el tipo de solicitud segun la senial
+		//Invitacion
+		if(signal == SIGUSR1){
+			printf("Solicitud_%d de invitacion\n",contadorSolicitudes);
+			solicitud.tipo = 0;
+		//QR
+		}else{
+			printf("Solicitud_%d por codigo QR\n",contadorSolicitudes);
+			solicitud.tipo = 1;
+		}
+		//Crear el hilo
+		//Mando la solicitud para ser procesada
+		pthread_create(&solicitud.hilo, NULL, accionesSolicitud, (void *) &solicitud);
+	//Cola llena
+	}else{
+		printf("Cola de solicitudes llena, Solicitud ignorada\n");
+	}	
 //Fin de la seccion critica
 	pthread_mutex_unlock(&mutexColaSolicitudes);
 	}
