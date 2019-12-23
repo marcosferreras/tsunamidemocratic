@@ -4,7 +4,7 @@ Dudas:
 */
 /*
 Trabajando en:
-	Escribir los logs
+	Completar la funcion nuevaSolicitud
 */
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,6 +26,7 @@ typedef struct actividad{
 	char idUsuario[50];
 	pthread_t hilo;
 } Actividad;
+
 //Estructura de solicitud
 typedef struct solicitud {
 	char id[50];
@@ -73,13 +74,13 @@ int main(){
 	int tipoAtendedor[3]={1,2,3};
 	int i;
 	//Tratamiento de señales
-	struct sigaction sSolicitud={0};
-	struct sigaction sFinalizar={0};
+	struct sigaction solicitud={0};
+	struct sigaction finalizar={0};
 //	sSolicitud.sa_handler=manejadoraSolicitud;
-	sigaction(SIGUSR1,&sSolicitud,NULL);
-	sigaction(SIGUSR2,&sSolicitud,NULL);
+	sigaction(SIGUSR1,&solicitud,NULL);
+	sigaction(SIGUSR2,&solicitud,NULL);
 //	sFinalizar.sa_handler=manejadoraFinalizar;
-	sigaction(SIGINT,&sFinalizar,NULL);
+	sigaction(SIGINT,&finalizar,NULL);
 	//Inicializar recursos	
 	srand(time(NULL));
 	contadorSolicitudes=0;
@@ -124,6 +125,38 @@ void *accionesCoordinadorSocial(void *ptr){
 
 }
 
+void nuevaSolicitud(int signal){
+//Declaro la solicitud
+Solicitud solicitud;
+//Contador del bucle
+int i = 0, j = 0;
+//Condicion de salida del while
+int completo = 0;
+//Compruebo el espacio en la lista de solicitudes
+	//while((i < tamCola) && (completo < tamCola)){
+	for(i = 0; i < tamCola; i++){
+		//Si el hueco de la solicitud esta libre, entro
+		if(&colaSolicitudes[tamCola] == NULL){
+			//Introduzco el identificador con su valor y lo incremento
+			j++;
+			solicitud.id[i] = j;
+			solicitud.atendido = 0;
+			//Indico el tipo de solicitud segun la senial
+			//Invitacion
+			if(signal == SIGUSR1){
+				solicitud.tipo = 0;
+			//QR
+			}else{
+				solicitud.tipo = 1;
+
+			}
+			//Crear el hilo
+			//Mando la solicitud para ser procesada
+			pthread_create(&solicitud.hilo, NULL, accionesSolicitud, (void *) &solicitud.id[j-1]);
+		}	
+		//Si esta posicion esta llena, no hago nada
+	}
+}
 //Escribimos en el log
 void writeLogMessage (char *id , char *msg) {
 	pthread_mutex_lock(&mutexLog);
