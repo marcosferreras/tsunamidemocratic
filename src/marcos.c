@@ -16,6 +16,7 @@ void *accionesSolicitud(void *ptr);
 void manejadoraSolicitud(int signal);
 void manejadoraFinalizar(int signal);
 void writeLogMessage (char *id , char *msg);
+void reordenarColaSolicitudes();
 pthread_mutex_t mutexLog;
 pthread_mutex_t mutexColaSolicitudes;
 pthread_mutex_t mutexColaSocial;
