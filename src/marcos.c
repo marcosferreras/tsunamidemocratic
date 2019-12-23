@@ -204,6 +204,7 @@ void *accionesSolicitud(void *structSolicitud){
 			printf("ID %s : La solicitud de tipo %d se ha eliminado por fallo de la aplicacion\n", solicitud->id, solicitud->tipo);	
 			//TODO Pendiente de crear una función que me saque de la cola y reordene el array de la cola, para evitar huecos
 			inicializarSolicitud(solicitud);
+			reordenarColaSolicitudes();
 			pthread_exit(NULL);
 		}
 		pthread_mutex_unlock(&mutexColaSolicitudes);
@@ -239,6 +240,9 @@ void *accionesSolicitud(void *structSolicitud){
 			strcpy(colaActividadSocial[contadorActividadesCola].idUsuario, id);
 			//Incremento el numero de actividades
 			contadorActividadesCola++;
+			if(contadorActividadesCola==4){
+				//TODO Avisar al coordinador que soy el ultimo
+			}
 			
 		} else {
 			//Libero espacio en cola de solicitudes
@@ -291,12 +295,34 @@ void inicializarSolicitud(Solicitud* solicitud){
 	solicitud->atendido=0;
 	solicitud->tipo=0;
 	solicitud->hilo=0;
+	//Se eliminan los huecos en la cola, siempre y cuando hubiera al menos uno en ella.
+	if(contadorSolicitudesCola>0){
+		reordenarColaSolicitudes();
+	}
 	pthread_mutex_unlock(&mutexColaSolicitudes);
 }
 /**
  *@author Marcos Ferreras
+ *Inicializa los campos de la estructura actividad a 0.
 */
 void inicializarActividad(Actividad* actividad){
 	pthread_mutex_lock(&mutexColaSocial);
 	strcpy(actividad->idUsuario, "0");
+	pthread_mutex_unlock(&mutexColaSocial);
+}
+/**
+ *@author Marcos Ferreras
+ *Elimina los huecos vacios que se originan al borrar un elemento
+*/
+void reordenarColaSolicitudes(){
+	int i, hueco=0;
+	for(i=0;i<contadorSolicitudesCola;i++){
+		if(colaSolicitudes[i].id=="0"){
+			hueco=i;
+		}
+	}
+	while((hueco+1) < contadorSolicitudesCola){
+		colaSolicitudes[hueco] = colaSolicitudes[hueco+1];
+		hueco++;
+	}
 }
