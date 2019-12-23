@@ -54,26 +54,28 @@ void *accionesAtendedor(void *ptrs){
 	do{
 		cafe++;
 		do{
-			aux=*(int *)ptrs;
-			pthread_mutex_lock(&mutexColaSolicitudes);
-			salto:		
-				contador++;
-				num=-1;
-				for(int i=0;i<tamCola;i++){
-					if((colaSolicitudes[i].tipo==aux || aux==3) && colaSolicitudes[i].atendido==0){
-						if(num>atoi(colaSolicitudes[i].id) || num==-1){
-							num=atoi(colaSolicitudes[i].id);
-							posicion=i;
-							printf("%d-encontrado: %d, ronda %d\n",*(int *)ptrs, num, contador);					
-						}
+			if(contador%2==0){
+				aux=*(int *)ptrs;
+				pthread_mutex_lock(&mutexColaSolicitudes);
+			}		
+			contador++;
+			num=-1;
+			for(int i=0;i<tamCola;i++){
+				if((colaSolicitudes[i].tipo==aux || aux==3) && colaSolicitudes[i].atendido==0){
+					if(num>sacarNumero(colaSolicitudes[i].id) || num==-1){
+						num=sacarNumero(colaSolicitudes[i].id);
+						posicion=i;
+						printf("%d-encontrado: %d, ronda %d\n",*(int *)ptrs, num, contador);					
 					}
 				}
-				if(num==-1){
-					aux=3;
-					if(contador%2!=0) goto salto;
-				printf("%d-Par: %d\n",*(int *)ptrs,num);
-				pthread_mutex_unlock(&mutexColaSolicitudes);
-				sleep(1);
+			}
+			if(num==-1){
+				aux=3;
+				if(contador%2==0){
+					printf("%d-Par: %d\n",*(int *)ptrs,num);
+					pthread_mutex_unlock(&mutexColaSolicitudes);
+					sleep(1);
+			}
 			}
 		}while(num==-1);
 		colaSolicitudes[posicion].atendido==1;
@@ -114,10 +116,20 @@ void inicializarSolicitud(Solicitud* solicitud){
 	pthread_mutex_unlock(&mutexColaSolicitudes);
 }
 
-
-
-
-
+int sacarNumero(char *id){
+	char numero[50];
+	int posicion_, contador=0;
+	for (int i=0;i<sizeof(id);i++){
+		if(id[i]=='_') posicion_=i;
+	}
+	posicion_++;
+	while(id[posicion_]!='\0'){
+		numero[contador]=id[posicion_];
+		contador++;
+		posicion_++;
+	}
+	return atoi(numero);
+;
 
 
 
