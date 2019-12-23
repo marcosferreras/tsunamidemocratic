@@ -60,6 +60,7 @@ int contadorActividadesCola;
 //Para saber 
 int listaCerrada;
 //Mutex
+pthread_mutex_t mutexnuevaSolicitud;
 pthread_mutex_t mutexLog;
 pthread_mutex_t mutexColaSolicitudes;
 pthread_mutex_t mutexColaSocial;
@@ -96,7 +97,8 @@ int main(){
 		inicializarActividad(&colaActividadSocial[i]);
 	}
 */
-	//Inicializo los mutex
+	//Inicializamos los mutex
+	pthread_mutex_init(&mutexnuevaSolicitud, NULL);
 	pthread_mutex_init(&mutexColaSocial,NULL);
 	pthread_mutex_init(&mutexLog, NULL);
 	pthread_mutex_init(&mutexColaSolicitudes, NULL);
@@ -126,6 +128,8 @@ void *accionesCoordinadorSocial(void *ptr){
 }
 
 void nuevaSolicitud(int signal){
+//Seccion Critica
+pthread_mutex_lock(&mutexnuevaSolicitud);
 //Declaro la solicitud
 Solicitud solicitud;
 //Contador del bucle
@@ -148,7 +152,6 @@ int completo = 0;
 			//QR
 			}else{
 				solicitud.tipo = 1;
-
 			}
 			//Crear el hilo
 			//Mando la solicitud para ser procesada
@@ -156,6 +159,8 @@ int completo = 0;
 		}	
 		//Si esta posicion esta llena, no hago nada
 	}
+//Fin de la seccion critica
+pthread_mutex_unlock(&mutexnuevaSolicitud);
 }
 //Escribimos en el log
 void writeLogMessage (char *id , char *msg) {
