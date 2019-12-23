@@ -30,7 +30,7 @@ int listaCerrada;
 
 void *accionesAtendedor(void * a);
 void inicializarSolicitud(Solicitud* solicitud);
-
+int sacarNumero(char *id);
 
 
 int main(){
@@ -117,19 +117,15 @@ void inicializarSolicitud(Solicitud* solicitud){
 }
 
 int sacarNumero(char *id){
-	char numero[50];
+	int numero=0;
 	int posicion_=0, contador=0;
-	for (int i=0;i<sizeof(id);i++){
-		if(id[i]=='_') posicion_=i;
+	for (int i=0;i<strlen(id);i++){
+		if(id[i]>='0' && id[i]<='9'){
+			numero=numero*10 + id[i] - '0';
+		}
 	}
-	posicion_++;
-	while(id[posicion_]!='\0'){
-		numero[contador]=id[posicion_];
-		contador++;
-		posicion_++;
-	}
-	return atoi(numero);
-;
+	return numero;
+}
 
 
 
