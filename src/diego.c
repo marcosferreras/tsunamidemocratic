@@ -131,7 +131,7 @@ void nuevaSolicitud(int signal){
 	//Declaro la solicitud
 	Solicitud solicitud;
 	//Compruebo si se ha llenado la lista
-	if(contadorSolicitudes != tamCola){
+	if(contadorSolicitudesCola != tamCola){
 		//Introduzco el identificador con su valor y lo incremento
 		contadorSolicitudes++;
 		printf("Solicitud_%d añadida a la lista de solicitudes\n",contadorSolicitudes);
