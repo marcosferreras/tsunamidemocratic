@@ -37,7 +37,7 @@ int main(){
 	int tipoAtendedor[3]={1,2,3};
 	srand(time(NULL));
 	for(int i=0;i<tamCola;i++){
-		sprintf(colaSolicitudes[i].id, "%d", rand()%50+1);
+		sprintf(colaSolicitudes[i].id, "Solicitud_%d", rand()%50+1);
 		colaSolicitudes[i].tipo=rand()%2+1;
 	}
 	pthread_t atendedor_1, atendedor_2, atendedor_3;
@@ -118,7 +118,7 @@ void inicializarSolicitud(Solicitud* solicitud){
 
 int sacarNumero(char *id){
 	char numero[50];
-	int posicion_, contador=0;
+	int posicion_=0, contador=0;
 	for (int i=0;i<sizeof(id);i++){
 		if(id[i]=='_') posicion_=i;
 	}
