@@ -153,7 +153,7 @@ void *accionesAtendedor(void *ptr){
 void *accionesSolicitud(void *structSolicitud){
 	//char idSolicitud[50], cadenaLog[100];
 	Solicitud* solicitud = (Solicitud *)structSolicitud;
-	//0->Sin atender 1->En proceso de atención 2->Atendido
+	//0->Sin atender 1->En proceso de atención 2->Atendido 3->Atendido con Antecedentes
 	int enAtencion=0;
 	int aleatorio;
 	int participo;
@@ -213,7 +213,7 @@ void *accionesSolicitud(void *structSolicitud){
 	}
 	//enAtencion=solicitud->atendido;
 	//Mientras me esten atendiendo esperaré. No he soltado el mutex cuando salí del bucle anterior.
-	while(enAtencion==2){
+	while(enAtencion==1){
 		pthread_mutex_unlock(&mutexColaSolicitudes);
 		sleep(2);
 		pthread_mutex_lock(&mutexColaSolicitudes);
@@ -222,7 +222,7 @@ void *accionesSolicitud(void *structSolicitud){
 	//Al salir de este bucle no he soltado el mutex. En este punto lo desbloqueo, y decido si me uno a una actividad social o no (Si puedo).
 	enAtencion=solicitud->atendido;
 	pthread_mutex_unlock(&mutexColaSolicitudes);
-	if(enAtencion == 3){
+	if(enAtencion == 2){
 		participo=rand()%2;
 		//0->Si Participo 1->No Participo
 		if(participo==0){
@@ -254,10 +254,11 @@ void *accionesSolicitud(void *structSolicitud){
 			inicializarSolicitud(solicitud);
 		}
 		pthread_exit(NULL);
+	} else if(enAtencion==3){
+		//Solicitud con antecedentes. Libero el hueco en la cola y finalizo hilo.
+		inicializarSolicitud(solicitud);
+		pthread_exit(NULL);
 	}
-	//Solicitud con antecedentes. Libero el hueco en la cola y finalizo hilo.
-	inicializarSolicitud(solicitud);
-	pthread_exit(NULL);
 	
 	
 	
