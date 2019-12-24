@@ -16,10 +16,12 @@ void *accionesSolicitud(void *ptr);
 void manejadoraSolicitud(int signal);
 void manejadoraFinalizar(int signal);
 void writeLogMessage (char *id , char *msg);
-void reordenarColaSolicitudes();
+int sacarNumero(char *id);
+void *usuarioEnActividad(void *id);
 pthread_mutex_t mutexLog;
 pthread_mutex_t mutexColaSolicitudes;
 pthread_mutex_t mutexColaSocial;
+pthread_cond_t condActividades;
 FILE *logFile;
 typedef struct solicitud {
 	char id[50];
@@ -32,12 +34,7 @@ typedef struct solicitud {
 void inicializarSolicitud(Solicitud* solicitud);
 //Cola de solicitudes
 Solicitud colaSolicitudes[tamCola];
-typedef struct actividad{
-	char idUsuario[50];
-	pthread_t hilo;
-} Actividad;
-void inicializarActividad(Actividad* actividad);
-Actividad colaActividadSocial[4];
+int idUsuariosActividad[4];
 //Para la asignacion de ID a las solicitudes
 int contadorSolicitudes;
 //Para saber cuantos hay en cola
@@ -69,11 +66,12 @@ int main(){
 	contadorActividadesCola=0;
 	listaCerrada=false;
 	logFile=NULL;
+	pthread_cond_init(&condActividades, NULL);
 	for(i=0;i<tamCola;i++){
 		inicializarSolicitud(&colaSolicitudes[i]);
 	}
 	for(i=0;i<4;i++){
-		inicializarActividad(&colaActividadSocial[i]);
+		idUsuariosActividad[i]=0;
 	}
 	pthread_mutex_init(&mutexColaSocial,NULL);
 	pthread_mutex_init(&mutexLog, NULL);
@@ -205,7 +203,6 @@ void *accionesSolicitud(void *structSolicitud){
 			printf("ID %s : La solicitud de tipo %d se ha eliminado por fallo de la aplicacion\n", solicitud->id, solicitud->tipo);	
 			//TODO Pendiente de crear una función que me saque de la cola y reordene el array de la cola, para evitar huecos
 			inicializarSolicitud(solicitud);
-			reordenarColaSolicitudes();
 			pthread_exit(NULL);
 		}
 		pthread_mutex_unlock(&mutexColaSolicitudes);
@@ -238,27 +235,42 @@ void *accionesSolicitud(void *structSolicitud){
 				pthread_mutex_lock(&mutexColaSocial);
 			}
 			//Copio el id del usuario a la actividad
-			strcpy(colaActividadSocial[contadorActividadesCola].idUsuario, id);
+			idUsuariosActividad[contadorActividadesCola]= sacarNumero(id);
 			//Incremento el numero de actividades
 			contadorActividadesCola++;
 			if(contadorActividadesCola==4){
-				//TODO Avisar al coordinador que soy el ultimo
+				//Aviso al coordinador que soy el ultimo
+				pthread_cond_signal(&condActividades);
 			}
+			pthread_mutex_unlock(&mutexColaSocial);
+			//Libero espacio en la cola
+			pthread_mutex_lock(&mutexColaSolicitudes);
+			inicializarSolicitud(solicitud);
+			pthread_mutex_unlock(&mutexColaSolicitudes);
+			pthread_exit(NULL);
 			
 		} else {
 			//Libero espacio en cola de solicitudes
-			//TODO Pendiente de crear una función que me saque de la cola y reordene el array de la cola, para evitar huecos
 			inicializarSolicitud(solicitud);
 		}
 		pthread_exit(NULL);
 	}
 	//Solicitud con antecedentes. Libero el hueco en la cola y finalizo hilo.
-	//TODO Pendiente de crear una función que me saque de la cola y reordene el array de la cola, para evitar huecos
 	inicializarSolicitud(solicitud);
 	pthread_exit(NULL);
 	
 	
 	
+}
+void *usuarioEnActividad(void *id){
+	sleep(3);
+	pthread_mutex_lock(&mutexColaSolicitudes);
+	contadorActividadesCola--;
+	if(contadorActividadesCola==0){
+		pthread_cond_signal(&condActividades);
+	}
+	//TODO Escribir en el log
+	pthread_exit(NULL);
 }
 
 //Escribimos en el log
@@ -296,34 +308,16 @@ void inicializarSolicitud(Solicitud* solicitud){
 	solicitud->atendido=0;
 	solicitud->tipo=0;
 	solicitud->hilo=0;
-	//Se eliminan los huecos en la cola, siempre y cuando hubiera al menos uno en ella.
-	if(contadorSolicitudesCola>0){
-		reordenarColaSolicitudes();
-	}
 	pthread_mutex_unlock(&mutexColaSolicitudes);
 }
-/**
- *@author Marcos Ferreras
- *Inicializa los campos de la estructura actividad a 0.
-*/
-void inicializarActividad(Actividad* actividad){
-	pthread_mutex_lock(&mutexColaSocial);
-	strcpy(actividad->idUsuario, "0");
-	pthread_mutex_unlock(&mutexColaSocial);
-}
-/**
- *@author Marcos Ferreras
- *Elimina los huecos vacios que se originan al borrar un elemento
-*/
-void reordenarColaSolicitudes(){
-	int i, hueco=0;
-	for(i=0;i<contadorSolicitudesCola;i++){
-		if(colaSolicitudes[i].id=="0"){
-			hueco=i;
+int sacarNumero(char *id){
+	int numero=0;
+	int posicion_=0, contador=0;
+	for (int i=0;i<strlen(id);i++){
+		if(id[i]>='0' && id[i]<='9'){
+			numero=numero*10 + id[i] - '0';
 		}
 	}
-	while((hueco+1) < contadorSolicitudesCola){
-		colaSolicitudes[hueco] = colaSolicitudes[hueco+1];
-		hueco++;
-	}
+	return numero;
 }
+
