@@ -125,18 +125,6 @@ void *accionesCoordinadorSocial(void *ptr){
 }
 
 void nuevaSolicitud(int signal){
-////////////////
-//Contador del bucle
-int i = 0;
-//Compruebo el espacio en la lista de solicitudes
-	for(i = 0; i < tamCola; i++){
-		//Si el hueco de la solicitud esta libre, entro
-		if(&colaSolicitudes[tamCola] == NULL){
-	//Compruebo si se ha llenado la lista
-	if(contadorSolicitudesCola != tamCola){
-
-
-////////////////
 //Variable para imprimir los mensajes /*sprintf(buffer, "mensaje");*/ /*writeLogMessage (char *id , char *msg)*/
 	char buffer[500];
 //Seccion Critica
@@ -185,6 +173,7 @@ int i = 0;
 //Fin de la seccion critica
 	pthread_mutex_unlock(&mutexColaSolicitudes);
 	}
+}
 //Escribimos en el log
 void writeLogMessage (char *id , char *msg) {
 	pthread_mutex_lock(&mutexLog);
