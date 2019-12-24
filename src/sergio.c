@@ -43,14 +43,14 @@ int main(){
 
 	int i;
 
-	contadorActividadesCola=4;
+	contadorActividadesCola=4;//el contador se suma en marcos.c
 	listaCerrada=false;
 	logFile=NULL;
 	// inicializamos la condicion de espera del hilo del coordinador	
 	//if (pthread_cond_init(&usuario[i], NULL)!=0) exit(-1);
 	// inicializamos las condiciones de espera de los usuarios
-	for(i=0; i<=4; i++)
-		if (pthread_cond_init(&usuarioInicio[i], NULL)!=0) exit(-1);
+	//for(i=0; i<=4; i++)
+	//	if (pthread_cond_init(&usuarioInicio[i], NULL)!=0) exit(-1);
 
 	for(i=0;i<4;i++){
 		idUsuariosActividad[i]=0;
@@ -65,7 +65,7 @@ int main(){
 	//Creamos el hilo del coordinador
 	pthread_create(&coordinador, NULL, accionesCoordinadorSocial, NULL);
 	sleep(3);//simula la practica
-	//llamada d marcos
+	//llamada d marcos.c
 	pthread_cond_signal(&condActividades);
 
 	while(true){
@@ -90,9 +90,10 @@ void *accionesCoordinadorSocial(){
 	pthread_create(&usuario4, NULL, usuarioEnActividad, (void *) &idUsuariosActividad[3]);
 
 	printf("Tsunami democratico iniciado\n\n");
-	//pthread_cond_signal(&usuarioInicio[0]);
 	pthread_cond_wait(&condActividades, &mutexColaSocial);
+	sleep(1);
 	printf("\nTsunami democratico finalizado existosamente\n\n");
+
 	listaCerrada = false;
 
 	pthread_mutex_unlock(&mutexColaSocial);
@@ -100,9 +101,7 @@ void *accionesCoordinadorSocial(){
 
 void *usuarioEnActividad(void *id){
 
-	//pthread_cond_wait(&usuarioInicio[*(int *)id-1], &mutexColaSocial);
 	printf("[UsuarioID: %d -> Se ha unido al Tsunami]\n", *(int *)id);
-	//pthread_cond_signal(&usuarioInicio[*(int *)id]);
 	sleep(3);
 	printf("[UsuarioID: %d -> Se ha marchado del Tsunami]\n", *(int *)id);
 
