@@ -49,9 +49,10 @@ int main(){
 
 
 void *accionesAtendedor(void *ptrs){
-	int aux, num, contador=0, calculo, espera, apto=true, posicion=0, cafe=0;	
+	int aux, num, contador=0, calculo, espera, apto, posicion=0, cafe=0;	
 	//printf("Exito %d", *(int *)ptrs);
 	do{
+		apto=true;
 		cafe++;
 		do{
 			if(contador%2==0){
