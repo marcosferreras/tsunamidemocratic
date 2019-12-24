@@ -14,30 +14,27 @@
 
 //Defino las funciones
 void *accionesCoordinadorSocial();
+void *usuarioEnActividad();
 void writeLogMessage (char *id , char *msg);
 
 pthread_mutex_t mutexLog;
 pthread_mutex_t mutexColaSolicitudes;
 pthread_mutex_t mutexColaSocial;
 
+pthread_cond_t condActividades;
+pthread_cond_t condUsuarios;
+pthread_cond_t usuarioInicio[5];
+
 FILE *logFile;
 
-typedef struct actividad{
-	char idUsuario[50];
-	pthread_t hilo;
-} Actividad;
-
-void inicializarActividad(Actividad* actividad);
-Actividad colaActividadSocial[4];
-void crearHilosActividad();
-
+int idUsuariosActividad[4];
+//Para la asignacion de ID a las solicitudes
+int contadorSolicitudes;
 //Para saber cuantos hay en cola
+int contadorSolicitudesCola;
 int contadorActividadesCola;
 //Para saber 
 int listaCerrada;
-
-pthread_cond_t condicion, usuario[5];
-int idUsuariosActividad[4]= {34,45,12,2};
 
 /*
  *	Main
@@ -46,45 +43,77 @@ int main(){
 
 	int i;
 
-	contadorActividadesCola=0;
+	contadorActividadesCola=4;
 	listaCerrada=false;
 	logFile=NULL;
+	// inicializamos la condicion de espera del hilo del coordinador	
+	//if (pthread_cond_init(&usuario[i], NULL)!=0) exit(-1);
+	// inicializamos las condiciones de espera de los usuarios
+	for(i=0; i<=4; i++)
+		if (pthread_cond_init(&usuarioInicio[i], NULL)!=0) exit(-1);
 
 	for(i=0;i<4;i++){
-		inicializarActividad(&colaActividadSocial[i]);
+		idUsuariosActividad[i]=0;
 	}
 
 	pthread_mutex_init(&mutexLog, NULL);
-	pthread_mutex_init(&mutexColaSolicitudes, NULL);
-	//Encargados de las solicitudes de:
+	pthread_mutex_init(&mutexColaSocial,NULL);
+
+	//Encargado de la actividad
 	pthread_t coordinador;
+
 	//Creamos el hilo del coordinador
 	pthread_create(&coordinador, NULL, accionesCoordinadorSocial, NULL);
+	sleep(3);//simula la practica
+	//llamada d marcos
+	pthread_cond_signal(&condActividades);
 
 	while(true){
 		pause();
 	}
 }
 
-void *accionesCoordinadorSocial(void* ptr){
+void *accionesCoordinadorSocial(){
 	int i, M = 0;
-
-	//pthread_cond_wait(&condicion, &mutexColaSocial);---------------------------------------
-	crearHilosActividad();
+	int idUsuariosActividad[4] = {1,2,3,4};
 
 	pthread_mutex_lock(&mutexColaSocial);
-	
-	if ((++M)>=4) pthread_cond_signal(&condicion);
-	
-	// Comprobamos si ha finalizado su hilo precedente
-	pthread_cond_wait(&usuario[*(int *)ptr-1], &mutexColaSocial);
+	pthread_cond_wait(&condActividades, &mutexColaSocial);
 
-	printf("[UsuarioID: %d -> Ha iniciado la actividad]\n", *(int *)ptr);
+	listaCerrada = true;
 
-	// enviamos señal de finalización del hilo
-	pthread_cond_signal(&usuario[*(int *)ptr]);
+	pthread_t usuario1, usuario2, usuario3, usuario4;
+
+	pthread_create(&usuario1, NULL, usuarioEnActividad, (void *) &idUsuariosActividad[0]);
+	pthread_create(&usuario2, NULL, usuarioEnActividad, (void *) &idUsuariosActividad[1]);
+	pthread_create(&usuario3, NULL, usuarioEnActividad, (void *) &idUsuariosActividad[2]);
+	pthread_create(&usuario4, NULL, usuarioEnActividad, (void *) &idUsuariosActividad[3]);
+
+	printf("Tsunami democratico iniciado\n\n");
+	//pthread_cond_signal(&usuarioInicio[0]);
+	pthread_cond_wait(&condActividades, &mutexColaSocial);
+	printf("\nTsunami democratico finalizado existosamente\n\n");
+	listaCerrada = false;
 
 	pthread_mutex_unlock(&mutexColaSocial);
+}
+
+void *usuarioEnActividad(void *id){
+
+	//pthread_cond_wait(&usuarioInicio[*(int *)id-1], &mutexColaSocial);
+	printf("[UsuarioID: %d -> Se ha unido al Tsunami]\n", *(int *)id);
+	//pthread_cond_signal(&usuarioInicio[*(int *)id]);
+	sleep(3);
+	printf("[UsuarioID: %d -> Se ha marchado del Tsunami]\n", *(int *)id);
+
+	pthread_mutex_lock(&mutexColaSocial);	
+	contadorActividadesCola--;
+	if(contadorActividadesCola==0){
+		pthread_cond_signal(&condActividades);
+	}
+	//TODO Escribir en el log
+	pthread_mutex_unlock(&mutexColaSocial);	
+	pthread_exit(NULL);
 }
 
 //Escribimos en el log
@@ -105,35 +134,4 @@ void writeLogMessage (char *id , char *msg) {
 	fclose (logFile);
 	pthread_mutex_unlock(&mutexLog); 
 
-}
-
-/**
- *@author Marcos Ferreras
-*/
-void inicializarActividad(Actividad* actividad){
-	pthread_mutex_lock(&mutexColaSocial);
-	strcpy(actividad->idUsuario, "0");
-	pthread_mutex_unlock(&mutexColaSocial);
-}
-
-void crearHilosActividad(){
-	int i;
-
-	// inicializamos las condiciones de espera de los hilos
-	for(i = 0; i < 4; i++){
-		if (pthread_cond_init(&usuario[i], NULL)!=0) exit(-1);
-	}
-	// inicializamos la condicion de espera del hilo principal
-	if (pthread_cond_init(&condicion, NULL)!=0) exit(-1);
-
-	pthread_t usuario1, usuario2, usuario3, usuario4;
-
-	pthread_create(&usuario1, NULL, accionesCoordinadorSocial, (void *) &idUsuariosActividad[0]);
-	pthread_create(&usuario2, NULL, accionesCoordinadorSocial, (void *) &idUsuariosActividad[1]);
-	pthread_create(&usuario3, NULL, accionesCoordinadorSocial, (void *) &idUsuariosActividad[2]);
-	pthread_create(&usuario4, NULL, accionesCoordinadorSocial, (void *) &idUsuariosActividad[3]);
-
-	pthread_cond_wait(&condicion, &mutexColaSocial);
-	printf("Va a comenzar la actividad\n");
-	pthread_cond_signal(&usuario[0]);	
 }
