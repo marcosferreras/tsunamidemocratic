@@ -133,28 +133,33 @@ void nuevaSolicitud(int signal){
 	Solicitud solicitud;
 	//Contador del bucle
 	int i = 0, completo = 0;
+	//Variable para el numero de solicitud
+	char valorId = ' ';
 	//Compruebo el espacio en la lista de solicitudes
 	for(i = 0; i < tamCola; i++){
 		//Si el hueco de la solicitud esta libre, entro
 		if(&colaSolicitudes[tamCola] == NULL){
 			//Introduzco el identificador con su valor y lo incremento
 			contadorSolicitudes++;
-			printf("Solicitud_%d añadida a la lista de solicitudes\n",contadorSolicitudes);
-			sprintf(buffer, "Solicitud_%d añadida a la lista de solicitudes\n",contadorSolicitudes);
-			solicitud.id[0] = contadorSolicitudes;
-			printf("Solicitud_%d lista para ser atendida\n",contadorSolicitudes);
-			sprintf(buffer, "Solicitud_%d lista para ser atendida\n",contadorSolicitudes);
+			//Guardo el valor en un char para introducirlo en id
+			valorId = contadorSolicitudes;
+			//Introduzco el numero en el identificador de la solicitud
+			sprintf(solicitud.id,"solicitud_%d",valorId);
+			printf("%s añadida a la lista de solicitudes\n",solicitud.id);
+			sprintf(buffer, "%s añadida a la lista de solicitudes\n",solicitud.id);
+			printf("%s lista para ser atendida\n",solicitud.id);
+			sprintf(buffer, "%s lista para ser atendida\n",solicitud.id);
 			solicitud.atendido = 0;
 			//Indico el tipo de solicitud segun la senial
 			//Invitacion
 			if(signal == SIGUSR1){
-				printf("Solicitud_%d de invitacion\n",contadorSolicitudes);
-				sprintf(buffer, "Solicitud_%d de invitacion\n",contadorSolicitudes);
+				printf("%s de invitacion\n",solicitud.id);
+				sprintf(buffer, "%s de invitacion\n",solicitud.id);
 				solicitud.tipo = 0;
 			//QR
 			}else{
-				printf("Solicitud_%d por codigo QR\n",contadorSolicitudes);
-				sprintf(buffer,"Solicitud_%d por codigo QR\n",contadorSolicitudes);
+				printf("%s por codigo QR\n",solicitud.id);
+				sprintf(buffer,"%s por codigo QR\n",solicitud.id);
 				solicitud.tipo = 1;
 			}
 			//Crear el hilo
