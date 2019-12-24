@@ -141,7 +141,7 @@ void nuevaSolicitud(int signal){
 			contadorSolicitudes++;
 			printf("Solicitud_%d añadida a la lista de solicitudes\n",contadorSolicitudes);
 			sprintf(buffer, "Solicitud_%d añadida a la lista de solicitudes\n",contadorSolicitudes);
-			solicitud.id[contadorSolicitudes] = contadorSolicitudes;
+			solicitud.id[0] = contadorSolicitudes;
 			printf("Solicitud_%d lista para ser atendida\n",contadorSolicitudes);
 			sprintf(buffer, "Solicitud_%d lista para ser atendida\n",contadorSolicitudes);
 			solicitud.atendido = 0;
@@ -167,12 +167,12 @@ void nuevaSolicitud(int signal){
 				sprintf(buffer,"Cola de solicitudes llena, Solicitud ignorada\n");
 			}
 			completo++;
-	}	
-	//Envio el mensaje guardado en el buffer a la funcion writeLogMessage
+		}	
+	}
+//Envio el mensaje guardado en el buffer a la funcion writeLogMessage
 	writeLogMessage ( solicitud.id , buffer);
 //Fin de la seccion critica
 	pthread_mutex_unlock(&mutexColaSolicitudes);
-	}
 }
 //Escribimos en el log
 void writeLogMessage (char *id , char *msg) {
