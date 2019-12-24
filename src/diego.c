@@ -37,7 +37,6 @@ typedef struct solicitud {
 	pthread_t hilo;
 } Solicitud;
 
-
 //Vector con el identificador de los atendedores
 int id[3]={1,2,3};
 //Defino las funciones
@@ -126,6 +125,8 @@ void *accionesCoordinadorSocial(void *ptr){
 }
 
 void nuevaSolicitud(int signal){
+//Variable para imprimir los mensajes /*sprintf(buffer, "mensaje");*/ /*writeLogMessage (char *id , char *msg)*/
+	char buffer[500];
 //Seccion Critica
 	pthread_mutex_lock(&mutexColaSolicitudes);
 	//Declaro la solicitud
@@ -135,17 +136,21 @@ void nuevaSolicitud(int signal){
 		//Introduzco el identificador con su valor y lo incremento
 		contadorSolicitudes++;
 		printf("Solicitud_%d añadida a la lista de solicitudes\n",contadorSolicitudes);
+		sprintf(buffer, "Solicitud_%d añadida a la lista de solicitudes\n",contadorSolicitudes);
 		solicitud.id[contadorSolicitudes] = contadorSolicitudes;
 		printf("Solicitud_%d lista para ser atendida\n",contadorSolicitudes);
+		sprintf(buffer, "Solicitud_%d lista para ser atendida\n",contadorSolicitudes);
 		solicitud.atendido = 0;
 		//Indico el tipo de solicitud segun la senial
 		//Invitacion
 		if(signal == SIGUSR1){
 			printf("Solicitud_%d de invitacion\n",contadorSolicitudes);
+			sprintf(buffer, "Solicitud_%d de invitacion\n",contadorSolicitudes);
 			solicitud.tipo = 0;
 		//QR
 		}else{
 			printf("Solicitud_%d por codigo QR\n",contadorSolicitudes);
+			sprintf(buffer,"Solicitud_%d por codigo QR\n",contadorSolicitudes);
 			solicitud.tipo = 1;
 		}
 		//Crear el hilo
@@ -154,7 +159,10 @@ void nuevaSolicitud(int signal){
 	//Cola llena
 	}else{
 		printf("Cola de solicitudes llena, Solicitud ignorada\n");
+		sprintf(buffer,"Cola de solicitudes llena, Solicitud ignorada\n");
 	}	
+	//Envio el mensaje guardado en el buffer a la funcion writeLogMessage
+	writeLogMessage ( solicitud.id , buffer);
 //Fin de la seccion critica
 	pthread_mutex_unlock(&mutexColaSolicitudes);
 	}
