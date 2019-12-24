@@ -15,6 +15,10 @@ Generar aleatorio entre 0 y 100 para los porcentajes.
 Miramos el flag cada 3 segundos (pseudo espera activa) para ver si ya me han terminado de atender.
 Decide o no, aleatorio 50% probabilidad.
 Poner mutex en writeLogMessage.
+realloc
+sprintf();
+Para pasar a la cola de actividades, recomienda que hagamos la cola de solicitudes con 4 espacios mas, con un flag que indique si está en la cola de actividad social o no
+Luego se le ocurrió hacerlo en colas distintas, cada vez que una solicitud quiere entrar a una actividad pone su id en el struct correpondiente de la actividad social (Que esta en una cola) y el ultimo avisa al coordinador y se destruye. El coordinador creará 4 hilos nuevos con esos ID, simulando que son los mismos. MEJOR ESTA!!!!
 
 
 
