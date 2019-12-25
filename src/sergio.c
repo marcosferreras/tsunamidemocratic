@@ -22,7 +22,6 @@ pthread_mutex_t mutexColaSolicitudes;
 pthread_mutex_t mutexColaSocial;
 
 pthread_cond_t condActividades;
-pthread_cond_t condUsuarios;
 pthread_cond_t usuarioInicio[5];
 
 FILE *logFile;
@@ -46,11 +45,7 @@ int main(){
 	contadorActividadesCola=4;//el contador se suma en marcos.c
 	listaCerrada=false;
 	logFile=NULL;
-	// inicializamos la condicion de espera del hilo del coordinador	
-	//if (pthread_cond_init(&usuario[i], NULL)!=0) exit(-1);
-	// inicializamos las condiciones de espera de los usuarios
-	//for(i=0; i<=4; i++)
-	//	if (pthread_cond_init(&usuarioInicio[i], NULL)!=0) exit(-1);
+
 
 	for(i=0;i<4;i++){
 		idUsuariosActividad[i]=0;
@@ -74,13 +69,14 @@ int main(){
 }
 
 void *accionesCoordinadorSocial(){
-	int i, M = 0;
+	int i;
 	int idUsuariosActividad[4] = {1,2,3,4};
 
 	pthread_mutex_lock(&mutexColaSocial);
 	pthread_cond_wait(&condActividades, &mutexColaSocial);
 
 	listaCerrada = true;
+	writeLogMessage("", "Lista cerrada");
 
 	pthread_t usuario1, usuario2, usuario3, usuario4;
 
@@ -90,22 +86,35 @@ void *accionesCoordinadorSocial(){
 	pthread_create(&usuario4, NULL, usuarioEnActividad, (void *) &idUsuariosActividad[3]);
 
 	printf("Tsunami democratico iniciado\n\n");
+	writeLogMessage("", "Tsunami democratico iniciado");
+
 	pthread_cond_wait(&condActividades, &mutexColaSocial);
-	sleep(1);
+
 	printf("\nTsunami democratico finalizado existosamente\n\n");
+	writeLogMessage("", "Tsunami democratico finalizado existosamente");
 
 	listaCerrada = false;
+	writeLogMessage("", "Lista abierta de nuevo");
 
 	pthread_mutex_unlock(&mutexColaSocial);
 }
 
 void *usuarioEnActividad(void *id){
-
-	printf("[UsuarioID: %d -> Se ha unido al Tsunami]\n", *(int *)id);
-	sleep(3);
-	printf("[UsuarioID: %d -> Se ha marchado del Tsunami]\n", *(int *)id);
+int M = 0;
 
 	pthread_mutex_lock(&mutexColaSocial);	
+		printf("[UsuarioID: %d -> Se ha unido al Tsunami]\n", *(int *)id);
+		writeLogMessage(id, "Se ha unido al Tsunami");
+	pthread_mutex_unlock(&mutexColaSocial);	
+	
+	sleep(3);
+
+	pthread_mutex_lock(&mutexColaSocial);
+		printf("[UsuarioID: %d -> Se ha marchado del Tsunami]\n", *(int *)id);
+		writeLogMessage(id, "Se ha marchado del Tsunami");
+	pthread_mutex_unlock(&mutexColaSocial);	
+
+	pthread_mutex_lock(&mutexColaSocial);
 	contadorActividadesCola--;
 	if(contadorActividadesCola==0){
 		pthread_cond_signal(&condActividades);
@@ -117,6 +126,7 @@ void *usuarioEnActividad(void *id){
 
 //Escribimos en el log
 void writeLogMessage (char *id , char *msg) {
+	int i;
 	pthread_mutex_lock(&mutexLog);
 	if(logFile==NULL){
 		logFile = fopen ("log.txt", "w") ;
@@ -126,8 +136,9 @@ void writeLogMessage (char *id , char *msg) {
 	// Calculamos la hora actual
 	time_t now = time (0) ;
 	struct tm *tlocal = localtime (&now) ;
-	char stnow [19];
-	strftime (stnow, 19, " %d/ %m/ %y %H: %M: %S " , tlocal) ;
+	char stnow [23];
+	//strcpy(stnow,"");
+	strftime (stnow, 23, " %d/ %m/ %y %H: %M: %S " , tlocal) ;
 	// Escribimos en el log. La primera vez de cada ejecución, borrará el log.txt en caso de que exista.
 	fprintf (logFile , "[%s] %s : %s\n" , stnow , id , msg) ;
 	fclose (logFile);
