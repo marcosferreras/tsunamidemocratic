@@ -325,13 +325,12 @@ void *accionesAtendedor(void *ptrs){
 	}while(true);
 }
 void *accionesCoordinadorSocial(){
-	int i, M = 0;
-	int idUsuariosActividad[4] = {1,2,3,4};
 
 	pthread_mutex_lock(&mutexColaSocial);
 	pthread_cond_wait(&condActividades, &mutexColaSocial);
 
 	listaCerrada = true;
+	writeLogMessage("", "Lista cerrada");
 
 	pthread_t usuario1, usuario2, usuario3, usuario4;
 
@@ -341,18 +340,34 @@ void *accionesCoordinadorSocial(){
 	pthread_create(&usuario4, NULL, usuarioEnActividad, (void *) &idUsuariosActividad[3]);
 
 	printf("Tsunami democratico iniciado\n\n");
+	writeLogMessage("", "Tsunami democratico iniciado");
+
 	pthread_cond_wait(&condActividades, &mutexColaSocial);
-	sleep(1);
+
 	printf("\nTsunami democratico finalizado existosamente\n\n");
+	writeLogMessage("", "Tsunami democratico finalizado existosamente");
 
 	listaCerrada = false;
+	writeLogMessage("", "Lista abierta de nuevo");
 
 	pthread_mutex_unlock(&mutexColaSocial);
 }
 void *usuarioEnActividad(void *id){
 	char idTemp[50];
 	sprintf(id,"%d",*(int *)id);
+	
+	pthread_mutex_lock(&mutexColaSocial);	
+		printf("[UsuarioID: %d -> Se ha unido al Tsunami]\n", *(int *)id);
+		writeLogMessage(id, "Se ha unido al Tsunami");
+	pthread_mutex_unlock(&mutexColaSocial);	
+	
 	sleep(3);
+
+	pthread_mutex_lock(&mutexColaSocial);
+		printf("[UsuarioID: %d -> Se ha marchado del Tsunami]\n", *(int *)id);
+		writeLogMessage(id, "Se ha marchado del Tsunami");
+	pthread_mutex_unlock(&mutexColaSocial);
+
 	pthread_mutex_lock(&mutexColaSolicitudes);
 	contadorActividadesCola--;
 	if(contadorActividadesCola==0){
@@ -360,8 +375,6 @@ void *usuarioEnActividad(void *id){
 	}
 	pthread_mutex_unlock(&mutexColaSolicitudes);
 	//TODO Escribir en el log
-	printf("ID %s : El usuario ha finalizado la actividad\n", idTemp);
-	writeLogMessage(idTemp,"El usuario ha finalizado la actividad");
 	pthread_exit(NULL);
 }
 
