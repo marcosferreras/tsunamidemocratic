@@ -67,7 +67,6 @@ int main(){
 	contadorActividadesCola=0;
 	listaCerrada=false;
 	logFile=NULL;
-	pthread_cond_init(&condActividades, NULL);
 	for(i=0;i<tamCola;i++){
 		inicializarSolicitud(&colaSolicitudes[i]);
 	}
@@ -77,6 +76,7 @@ int main(){
 	pthread_mutex_init(&mutexColaSocial,NULL);
 	pthread_mutex_init(&mutexLog, NULL);
 	pthread_mutex_init(&mutexColaSolicitudes, NULL);
+	pthread_cond_init(&condActividades, NULL);
 	//Encargados de las solicitudes de:
 	pthread_t atendedor_1, atendedor_2, atendedor_3, coordinador;
 	//Creamos los hilos de los "usuarios destacados"
