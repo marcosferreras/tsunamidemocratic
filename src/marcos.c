@@ -79,6 +79,8 @@ int main(){
 	//Encargados de las solicitudes de:
 	pthread_t atendedor_1, atendedor_2, atendedor_3;
 	//Creamos los hilos de los "usuarios destacados"
+	printf("Iniciando tsunami\n");
+	writeLogMessage("1","Iniciando tsunami");
 	pthread_create(&atendedor_1, NULL, accionesAtendedor, (void *) &tipoAtendedor[0]);
 	pthread_create(&atendedor_2, NULL, accionesAtendedor, (void *) &tipoAtendedor[1]);
 	pthread_create(&atendedor_3, NULL, accionesAtendedor, (void *) &tipoAtendedor[2]);
@@ -276,6 +278,7 @@ void *usuarioEnActividad(void *id){
 
 //Escribimos en el log
 void writeLogMessage (char *id , char *msg) {
+	int i;
 	pthread_mutex_lock(&mutexLog);
 	if(logFile==NULL){
 		logFile = fopen ("log.txt", "w") ;
@@ -285,8 +288,9 @@ void writeLogMessage (char *id , char *msg) {
 	// Calculamos la hora actual
 	time_t now = time (0) ;
 	struct tm *tlocal = localtime (&now) ;
-	char stnow [19];
-	strftime (stnow, 19, " %d/ %m/ %y %H: %M: %S " , tlocal) ;
+	char stnow [23];
+	//strcpy(stnow,"");
+	strftime (stnow, 23, " %d/ %m/ %y %H: %M: %S " , tlocal) ;
 	// Escribimos en el log. La primera vez de cada ejecución, borrará el log.txt en caso de que exista.
 	fprintf (logFile , "[%s] %s : %s\n" , stnow , id , msg) ;
 	fclose (logFile);
