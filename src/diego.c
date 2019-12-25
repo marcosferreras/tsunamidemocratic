@@ -125,6 +125,7 @@ void *accionesCoordinadorSocial(void *ptr){
 }
 
 void nuevaSolicitud(int signal){
+	printf("Nueva solicitud\n");
 //Variable para imprimir los mensajes /*sprintf(buffer, "mensaje");*/ /*writeLogMessage (char *id , char *msg)*/
 	char buffer[500];
 //Seccion Critica
@@ -191,7 +192,8 @@ void writeLogMessage (char *id , char *msg) {
 	time_t now = time (0) ;
 	struct tm *tlocal = localtime (&now) ;
 	char stnow [19];
-	strftime (stnow, 19, " %d/ %m/ %y %H: %M: %S " , tlocal) ;
+	//No poner %M:%S, empieza a poner caracteres extraños, ni separarlo
+	strftime (stnow, 19, "%d/ %m/ %y %I:%M%S" , tlocal) ;
 	// Escribimos en el log. La primera vez de cada ejecución, borrará el log.txt en caso de que exista.
 	fprintf (logFile , "[%s] %s : %s\n" , stnow , id , msg) ;
 	fclose (logFile);
