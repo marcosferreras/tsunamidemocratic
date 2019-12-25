@@ -87,7 +87,12 @@ int main(){
 	contadorActividadesCola=0;
 	listaCerrada=false;
 	logFile=NULL;
-
+	//Prueba de logs
+	/*
+	char buffer[500];
+	sprintf(buffer,"Cola de solicitudes llena, Solicitud ignorada\n");
+	writeLogMessage ( "id" , buffer);
+	*/
 	for(i=0;i<tamCola;i++){
 		inicializarSolicitud(&colaSolicitudes[i]);
 	}
@@ -193,7 +198,7 @@ void writeLogMessage (char *id , char *msg) {
 	struct tm *tlocal = localtime (&now) ;
 	char stnow [19];
 	//No poner %M:%S, empieza a poner caracteres extraños, ni separarlo
-	strftime (stnow, 19, "%d/ %m/ %y %I:%M%S" , tlocal) ;
+	strftime (stnow, 19, "%d/ %m/ %y %H:%M%S" , tlocal) ;
 	// Escribimos en el log. La primera vez de cada ejecución, borrará el log.txt en caso de que exista.
 	fprintf (logFile , "[%s] %s : %s\n" , stnow , id , msg) ;
 	fclose (logFile);
