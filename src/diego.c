@@ -146,7 +146,7 @@ void nuevaSolicitud(int signal){
 	//Compruebo el espacio en la lista de solicitudes
 	while((i < tamCola) && (noGuardado == false)){
 		//Si el hueco de la solicitud esta libre, entro
-		if(&colaSolicitudes[i] == NULL){
+		if(&colaSolicitudes[i] == 0){
 			//Introduzco el identificador con su valor y lo incremento
 			contadorSolicitudes++;
 			//Guardo el valor en un char para introducirlo en id
