@@ -7,7 +7,7 @@
 #include <signal.h>
 #include <string.h>
 #include <sys/wait.h>
-void ejecutar(int senial1,int senial2,int alternar,int pid);
+void ejecutar(int senial1,int senial2,int alternar,int pid, int espera);
 void menu(int pid);
 int main(int argc, char *argv[]){
 
@@ -27,10 +27,12 @@ int main(int argc, char *argv[]){
 }
 
 void menu(int pid){
-int senial1 = 0,senial2 = 0,alternar = 0, defecto = 0;
+int senial1 = 0,senial2 = 0,alternar = 0, defecto = 0,espera = 0;
+	//Configuracion basica
 	printf("Prefiere probar con los valores predefinidos?\n");
 	printf("1- Si\n2- No\n");
 	scanf("%d",&alternar);
+	//Configurar
 	if(defecto == 2){
 		printf("Indique el numero de señales SIGUSR1\n");
 		scanf("%d",&senial1);
@@ -39,14 +41,17 @@ int senial1 = 0,senial2 = 0,alternar = 0, defecto = 0;
 		printf("Desea altenarlas?\n");
 		printf("1- Si\n2- No\n");
 		scanf("%d",&alternar);
+		printf("Introduzca el numero de segundos de espera entre cada señal\n");
+		scanf("%d",&espera);
 		ejecutar(senial1,senial2,alternar,pid);
+	//Por defecto
 	}else{
 		printf("Valores por defecto,30,30,1\n");
-		ejecutar(30,30,1,pid);
+		ejecutar(30,30,1,pid,0);
 	}
 }
 
-void ejecutar(int senial1,int senial2,int alternar,int pid){
+void ejecutar(int senial1,int senial2,int alternar,int pid, int espera){
 	int i = 0;
 	int max = senial1+senial2;
 	char cmd1[100];
@@ -54,17 +59,29 @@ void ejecutar(int senial1,int senial2,int alternar,int pid){
 	sprintf(cmd1,"kill -10 %d",pid);
 	sprintf(cmd2,"kill -12 %d",pid);
 	int valor1 = 0,valor2 = 0;
-	for(i = 0;i < max;i++){
-		if(i < senial1){
-			valor1 = system(cmd1);
+	//No Alterna señales
+	if(alternar == 1){
+		for(i = 0;i < max;i++){
+			if(i < senial1){
+				valor1 = system(cmd1);
+			}
+			if(i < senial2){
+				valor2 = system(cmd2);
+			}
+			sleep(espera);
 		}
-		if(i < senial2){
-			valor2 = system(cmd2);
+	//Alterna señales
+	}else{
+		for(i = 0;i < max;i++){
+			if(i % 2 == 0){
+				valor1 = system(cmd1);
+			}else{
+				valor2 = system(cmd2);
+			}
+			sleep(espera);
 		}
 	}
-
-
-
-
-
+	//Fin del programa
+	sprintf(cmd1,"kill -4 %d",pid);
+	valor1 = system(cmd1);
 }
