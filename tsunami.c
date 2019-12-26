@@ -241,9 +241,11 @@ void *accionesSolicitud(void *structSolicitud){
 		//0->Si Participo 1->No Participo
 		if(participo==0){
 			//Libero hueco en solicitudes
-			inicializarSolicitud(solicitud);
 			printf("ID %s : El usuario esta preparado para la actividad\n", solicitud->id);
 			writeLogMessage(solicitud->id,"El usuario esta preparado para la actividad");
+			pthread_mutex_lock(&mutexColaSolicitudes);
+			inicializarSolicitud(solicitud);
+			pthread_mutex_unlock(&mutexColaSolicitudes);
 			pthread_mutex_lock(&mutexColaSocial);
 			while(listaCerrada==true){
 				pthread_mutex_unlock(&mutexColaSocial);
@@ -272,7 +274,9 @@ void *accionesSolicitud(void *structSolicitud){
 		pthread_exit(NULL);
 	} else if(enAtencion==3){
 		//Solicitud con antecedentes. Libero el hueco en la cola y finalizo hilo.
+		pthread_mutex_lock(&mutexColaSolicitudes);
 		inicializarSolicitud(solicitud);
+		pthread_mutex_unlock(&mutexColaSolicitudes);
 		pthread_exit(NULL);
 	}	
 }
@@ -294,14 +298,12 @@ void *accionesAtendedor(void *ptrs){
 					if(num>sacarNumero(colaSolicitudes[i].id) || num==-1){
 						num=sacarNumero(colaSolicitudes[i].id);
 						posicion=i;
-						printf("%d-encontrado: %d, ronda %d\n",*(int *)ptrs, num, contador);					
 					}
 				}
 			}
 			if(num==-1){
 				aux=3;
 				if(contador%2==0){
-					printf("%d-Par: %d\n",*(int *)ptrs,num);
 					pthread_mutex_unlock(&mutexColaSolicitudes);
 					sleep(1);
 			}
@@ -309,7 +311,6 @@ void *accionesAtendedor(void *ptrs){
 		}while(num==-1);
 		colaSolicitudes[posicion].atendido=1;
 		pthread_mutex_unlock(&mutexColaSolicitudes);
-		printf("%d-encontrado final: %d\n",*(int *)ptrs,num);
 		srand(time(NULL));
 		calculo=rand()%10+1;
 		if(calculo<=7){
@@ -318,14 +319,14 @@ void *accionesAtendedor(void *ptrs){
 			espera=rand()%5+2;
 		}else{
 			espera=rand()%5+6;
-		apto==false;
+			apto==false;
 		}
 		sleep(espera);
 		pthread_mutex_lock(&mutexColaSolicitudes);
 			if(apto==false){
 				inicializarSolicitud(&colaSolicitudes[posicion]);
 			} else{
-				colaSolicitudes[posicion].atendido==2;
+				colaSolicitudes[posicion].atendido=2;
 			}
 		pthread_mutex_unlock(&mutexColaSolicitudes);
 		if(cafe%5==0) sleep(10);
@@ -346,13 +347,8 @@ void *accionesCoordinadorSocial(){
 	pthread_create(&usuario3, NULL, usuarioEnActividad, (void *) &idUsuariosActividad[2]);
 	pthread_create(&usuario4, NULL, usuarioEnActividad, (void *) &idUsuariosActividad[3]);
 
-	printf("Tsunami democratico iniciado\n\n");
-	writeLogMessage("", "Tsunami democratico iniciado");
 
 	pthread_cond_wait(&condActividades, &mutexColaSocial);
-
-	printf("\nTsunami democratico finalizado existosamente\n\n");
-	writeLogMessage("", "Tsunami democratico finalizado existosamente");
 
 	listaCerrada = false;
 	writeLogMessage("", "Lista abierta de nuevo");
