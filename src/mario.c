@@ -31,7 +31,7 @@ int listaCerrada;
 void *accionesAtendedor(void * a);
 void inicializarSolicitud(Solicitud* solicitud);
 int sacarNumero(char *id);
-
+void writeLogMessage (char *id , char *msg);
 
 int main(){
 	int tipoAtendedor[3]={1,2,3};
@@ -66,14 +66,12 @@ void *accionesAtendedor(void *ptrs){
 					if(num>sacarNumero(colaSolicitudes[i].id) || num==-1){
 						num=sacarNumero(colaSolicitudes[i].id);
 						posicion=i;
-						printf("%d-encontrado: %d, ronda %d\n",*(int *)ptrs, num, contador);					
 					}
 				}
 			}
 			if(num==-1){
 				aux=3;
 				if(contador%2==0){
-					printf("%d-Par: %d\n",*(int *)ptrs,num);
 					pthread_mutex_unlock(&mutexColaSolicitudes);
 					sleep(1);
 			}
@@ -81,7 +79,6 @@ void *accionesAtendedor(void *ptrs){
 		}while(num==-1);
 		colaSolicitudes[posicion].atendido==1;
 		pthread_mutex_unlock(&mutexColaSolicitudes);
-		printf("%d-encontrado final: %d\n",*(int *)ptrs,num);
 		srand(time(NULL));
 		calculo=rand()%10+1;
 		if(calculo<=7){
@@ -90,7 +87,7 @@ void *accionesAtendedor(void *ptrs){
 			espera=rand()%5+2;
 		}else{
 			espera=rand()%5+6;
-		apto==false;
+			apto==false;
 		}
 		sleep(espera);
 		pthread_mutex_lock(&mutexColaSolicitudes);
@@ -128,7 +125,24 @@ int sacarNumero(char *id){
 	return numero;
 }
 
+void writeLogMessage (char *id , char *msg) {
+	pthread_mutex_lock(&mutexLog);
+	if(logFile==NULL){
+		logFile = fopen ("log.txt", "w") ;
+	} else {
+		logFile = fopen ("log.txt", "a") ;
+	}
+	// Calculamos la hora actual
+	time_t now = time (0) ;
+	struct tm *tlocal = localtime (&now) ;
+	char stnow [19];
+	strftime (stnow, 19, " %d/ %m/ %y %H: %M: %S " , tlocal) ;
+	// Escribimos en el log. La primera vez de cada ejecución, borrará el log.txt en caso de que exista.
+	fprintf (logFile , "[%s] %s : %s\n" , stnow , id , msg) ;
+	fclose (logFile);
+	pthread_mutex_unlock(&mutexLog); 
 
+}
 
 
 
