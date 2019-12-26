@@ -47,7 +47,7 @@ int senial1 = 0,senial2 = 0,alternar = 0, defecto = 0,espera = 0, avanzado = 0,r
 		printf("Configuracion avanzada\n");
 		printf("1- Si\n2- No\n");
 		scanf("%d",&avanzado);
-		if(avanzado == 0){
+		if(avanzado == 2){
 			printf("Ejecutando...\n");
 			ejecutar(senial1,senial2,alternar,pid,espera);
 		}else{
