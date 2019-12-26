@@ -88,11 +88,11 @@ int main(){
 	listaCerrada=false;
 	logFile=NULL;
 	//Prueba de logs
-	/*
+	
 	char buffer[500];
 	sprintf(buffer,"Cola de solicitudes llena, Solicitud ignorada\n");
 	writeLogMessage ( "id" , buffer);
-	*/
+
 	for(i=0;i<tamCola;i++){
 		inicializarSolicitud(&colaSolicitudes[i]);
 	}
@@ -133,18 +133,20 @@ void nuevaSolicitud(int signal){
 	printf("Nueva solicitud\n");
 //Variable para imprimir los mensajes /*sprintf(buffer, "mensaje");*/ /*writeLogMessage (char *id , char *msg)*/
 	char buffer[500];
-//Seccion Critica
-	pthread_mutex_lock(&mutexColaSolicitudes);
 	//Declaro la solicitud
 	Solicitud solicitud;
+//Seccion Critica
+	pthread_mutex_lock(&mutexColaSolicitudes);
 	//Contador del bucle
-	int i = 0, completo = 0;
+	int i = 0;
+	//Condicion de salida (Solicitud guardada)
+	int noGuardado = false;
 	//Variable para el numero de solicitud
 	char valorId = ' ';
 	//Compruebo el espacio en la lista de solicitudes
-	for(i = 0; i < tamCola; i++){
+	while((i < tamCola) && (noGuardado == false)){
 		//Si el hueco de la solicitud esta libre, entro
-		if(&colaSolicitudes[tamCola] == NULL){
+		if(&colaSolicitudes[i] == NULL){
 			//Introduzco el identificador con su valor y lo incremento
 			contadorSolicitudes++;
 			//Guardo el valor en un char para introducirlo en id
@@ -168,25 +170,27 @@ void nuevaSolicitud(int signal){
 				sprintf(buffer,"%s por codigo QR\n",solicitud.id);
 				solicitud.tipo = 1;
 			}
-			//Crear el hilo
+			//Solicitud guardada, salgo del bucle
+			noGuardado = true;
 			//Mando la solicitud para ser procesada
 			pthread_create(&solicitud.hilo, NULL, accionesSolicitud, (void *) &solicitud);
-		//Cola llena
-		}else{
-			if(completo == tamCola){
-				printf("Cola de solicitudes llena, Solicitud ignorada\n");
-				sprintf(buffer,"Cola de solicitudes llena, Solicitud ignorada\n");
-			}
-			completo++;
+		//Posicion ya ocupada
 		}	
+	i++;
+	}
+//Fin de la seccion critica
+	pthread_mutex_unlock(&mutexColaSolicitudes);
+	//Cola llena
+	if(i == tamCola){
+		printf("Cola de solicitudes llena, Solicitud ignorada\n");
+		sprintf(buffer,"Cola de solicitudes llena, Solicitud ignorada\n");
 	}
 //Envio el mensaje guardado en el buffer a la funcion writeLogMessage
 	writeLogMessage ( solicitud.id , buffer);
-//Fin de la seccion critica
-	pthread_mutex_unlock(&mutexColaSolicitudes);
 }
 //Escribimos en el log
 void writeLogMessage (char *id , char *msg) {
+	int i;
 	pthread_mutex_lock(&mutexLog);
 	if(logFile==NULL){
 		logFile = fopen ("log.txt", "w") ;
@@ -196,13 +200,14 @@ void writeLogMessage (char *id , char *msg) {
 	// Calculamos la hora actual
 	time_t now = time (0) ;
 	struct tm *tlocal = localtime (&now) ;
-	char stnow [19];
-	//No poner %M:%S, empieza a poner caracteres extraños, ni separarlo
-	strftime (stnow, 19, "%d/ %m/ %y %H:%M%S" , tlocal) ;
+	char stnow [23];
+	//strcpy(stnow,"");
+	strftime (stnow, 23, " %d/ %m/ %y %H: %M: %S " , tlocal) ;
 	// Escribimos en el log. La primera vez de cada ejecución, borrará el log.txt en caso de que exista.
 	fprintf (logFile , "[%s] %s : %s\n" , stnow , id , msg) ;
 	fclose (logFile);
 	pthread_mutex_unlock(&mutexLog); 
+
 }
 
 //Codigo reutilizable para las funciones
