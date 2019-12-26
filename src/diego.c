@@ -142,38 +142,39 @@ void nuevaSolicitud(int signal){
 	//Condicion de salida (Solicitud guardada)
 	int noGuardado = false;
 	//Variable para el numero de solicitud
-	char valorId = ' ';
+	int valorId = 0;
 	//Compruebo el espacio en la lista de solicitudes
 	while((i < tamCola) && (noGuardado == false)){
 		//Si el hueco de la solicitud esta libre, entro
-		if(&colaSolicitudes[i] == 0){
+		if(strcmp(colaSolicitudes[i].id,"0")==0){
+			solicitud = &colaSolicitudes[i];
 			//Introduzco el identificador con su valor y lo incremento
 			contadorSolicitudes++;
 			//Guardo el valor en un char para introducirlo en id
 			valorId = contadorSolicitudes;
 			//Introduzco el numero en el identificador de la solicitud
-			sprintf(solicitud.id,"solicitud_%d",valorId);
-			printf("%s añadida a la lista de solicitudes\n",solicitud.id);
-			sprintf(buffer, "%s añadida a la lista de solicitudes\n",solicitud.id);
-			printf("%s lista para ser atendida\n",solicitud.id);
-			sprintf(buffer, "%s lista para ser atendida\n",solicitud.id);
-			solicitud.atendido = 0;
+			sprintf(solicitud->id,"solicitud_%d",valorId);
+			printf("%s añadida a la lista de solicitudes\n",solicitud->id);
+			sprintf(buffer, "%s añadida a la lista de solicitudes\n",solicitud->id);
+			printf("%s lista para ser atendida\n",solicitud->id);
+			sprintf(buffer, "%s lista para ser atendida\n",solicitud->id);
+			solicitud->atendido = 0;
 			//Indico el tipo de solicitud segun la senial
 			//Invitacion
 			if(signal == SIGUSR1){
-				printf("%s de invitacion\n",solicitud.id);
-				sprintf(buffer, "%s de invitacion\n",solicitud.id);
-				solicitud.tipo = 0;
+				printf("%s de invitacion\n",solicitud->id);
+				sprintf(buffer, "%s de invitacion\n",solicitud->id);
+				solicitud->tipo = 0;
 			//QR
 			}else{
-				printf("%s por codigo QR\n",solicitud.id);
-				sprintf(buffer,"%s por codigo QR\n",solicitud.id);
-				solicitud.tipo = 1;
+				printf("%s por codigo QR\n",solicitud->id);
+				sprintf(buffer,"%s por codigo QR\n",solicitud->id);
+				solicitud->tipo = 1;
 			}
 			//Solicitud guardada, salgo del bucle
 			noGuardado = true;
 			//Mando la solicitud para ser procesada
-			pthread_create(&solicitud.hilo, NULL, accionesSolicitud, (void *) &solicitud);
+			pthread_create(&solicitud->hilo, NULL, accionesSolicitud, (void *) &solicitud);
 		//Posicion ya ocupada
 		}	
 	i++;
