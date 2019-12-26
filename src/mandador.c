@@ -116,7 +116,7 @@ void ejecutar(int senial1,int senial2,int alternar,int pid, int espera){
 		}
 	}
 	//Fin del programa
-	sprintf(cmd1,"kill -4 %d",pid);
+	sprintf(cmd1,"kill -2 %d",pid);
 	valor1 = system(cmd1);
 }
 
@@ -181,7 +181,7 @@ int i = 0;
 		}
 	}
 	//Fin del programa
-	sprintf(cmd1,"kill -4 %d",pid);
+	sprintf(cmd1,"kill -2 %d",pid);
 	valor1 = system(cmd1);
 }
 
@@ -189,7 +189,7 @@ void fin(int sig){
 		printf("\nMatando a los procesos\n");
 		int valor1 = 0;
 		char cmd1[100];
-		sprintf(cmd1,"kill -4 %d",pid);
+		sprintf(cmd1,"kill -2 %d",pid);
 		valor1 = system(cmd1);
 		exit(0);
 }
