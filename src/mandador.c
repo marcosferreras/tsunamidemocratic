@@ -7,9 +7,11 @@
 #include <signal.h>
 #include <string.h>
 #include <sys/wait.h>
+void fin(int sig);
 void ejecutar(int senial1,int senial2,int alternar,int pid, int espera);
 void ejecutarAvanzado(int senial1,int senial2,int alternar,int espera,int pid,int repetir,int patron1,int patron2);
 void menu(int pid);
+int pid = 0;
 int main(int argc, char *argv[]){
 
 //Función principal.
@@ -21,7 +23,7 @@ int main(int argc, char *argv[]){
 	}else{
 		//Defino las variables que voy a utilizar
 		//Asigno el pid
-		int pid = atoi(argv[1]);
+		pid = atoi(argv[1]);
 		menu(pid);
 	}
 	return 0;
@@ -29,10 +31,12 @@ int main(int argc, char *argv[]){
 
 void menu(int pid){
 int senial1 = 0,senial2 = 0,alternar = 0, defecto = 0,espera = 0, avanzado = 0,repetir = 0, patron1 = 0,patron2 = 0;
+	//Enmascaro la señal de salida
+	signal(SIGINT, &fin);
 	//Configuracion basica
 	printf("Prefiere probar con los valores predefinidos?\n");
 	printf("1- Si\n2- No\n");
-	scanf("%d",&alternar);
+	scanf("%d",&defecto);
 	//Configurar
 	if(defecto == 2){
 		printf("Indique el numero de señales SIGUSR1\n");
@@ -57,7 +61,7 @@ int senial1 = 0,senial2 = 0,alternar = 0, defecto = 0,espera = 0, avanzado = 0,r
 			scanf("%d",&repetir);
 			if(repetir == 1){
 				printf("Introduzca el patron de repeticion o introduzca 0 0  para patron aleatorio\n");
-				printf("Ejemplo:\n4\n1\n4 SIGUSR1,1 SIGUSR2");
+				printf("Ejemplo:\n4\n1\n4 SIGUSR1,1 SIGUSR2\n");
 				scanf("%d",&patron1);
 				scanf("%d",&patron2);
 				if(patron1 == 0 && patron2 == 0){
@@ -71,7 +75,7 @@ int senial1 = 0,senial2 = 0,alternar = 0, defecto = 0,espera = 0, avanzado = 0,r
 		}
 	//Por defecto
 	}else{
-		printf("Valores por defecto,30,30,1\n");
+		printf("Valores por defecto,30,30,1,0\n");
 		ejecutar(30,30,1,pid,0);
 	}
 }
@@ -83,9 +87,10 @@ void ejecutar(int senial1,int senial2,int alternar,int pid, int espera){
 	char cmd2[100];
 	sprintf(cmd1,"kill -10 %d",pid);
 	sprintf(cmd2,"kill -12 %d",pid);
-	int valor1 = 0,valor2 = 0;
+	int valor1 = 0,valor2 = 0,contador1 = 0,contador2 = 0;
 	//No Alterna señales
 	if(alternar == 1){
+		//Repito ambos hasta que llegue al numero de señales indicado, mando las 2 señales a la vez en cada bucle
 		for(i = 0;i < max;i++){
 			if(i < senial1){
 				valor1 = system(cmd1);
@@ -98,10 +103,14 @@ void ejecutar(int senial1,int senial2,int alternar,int pid, int espera){
 	//Alterna señales
 	}else{
 		for(i = 0;i < max;i++){
-			if(i % 2 == 0){
+			if(i % 2 == 0 && contador1 < senial1){
 				valor1 = system(cmd1);
+				contador1++;
 			}else{
-				valor2 = system(cmd2);
+				if(contador2 < senial2){
+					valor2 = system(cmd2);
+					contador2++;
+				}
 			}
 			sleep(espera);
 		}
@@ -118,22 +127,34 @@ int i = 0;
 	char cmd2[100];
 	sprintf(cmd1,"kill -10 %d",pid);
 	sprintf(cmd2,"kill -12 %d",pid);
-	int valor1 = 0,valor2 = 0;
+	int valor1 = 0,valor2 = 0, contador1 = 0,contador2 = 0;
 	int repetido1 = 0, repetido2 = 0;
-	//No Alterna señales
+	//Patron
 	if(alternar == 1){
 		if(repetido == 1){
-			for(i = 0;i < max;i++){
-				if(i < senial1 && repetido1 < patron1){
-					valor1 = system(cmd1);
-					repetido1++;
-				}
-				if(i < senial2 && repetido2 < patron2){
-					valor2 = system(cmd2);
-					repetido2++;
-				}
-				sleep(espera);
+			while(contador1+contador2 < max){
+			//Repito el bucle de SIGUSR1
+			while(contador1 < senial1 && repetido1 < patron1){
+				valor1 = system(cmd1);
+				repetido1++;
+				contador1++;
 			}
+			//Ya he terminado el bucle o no me quedan señales de SIGUSR1
+			if((repetido1 == patron1) || (contador1 == senial1)){
+				repetido2 = 0;
+			}
+			////Repito el bucle de SIGUSR2
+			while(contador2 < senial2 && repetido2 < patron2){
+				valor2 = system(cmd2);
+				repetido2++;
+				contador2++;
+			}
+			//Ya he terminado el bucle o no me quedan señales de SIGUSR2
+			if((repetido2 == patron2) || (contador2 == senial2)){
+				repetido1 = 0;
+			}
+			sleep(espera);
+		}
 		}else{
 			for(i = 0;i < max;i++){
 				if(i < senial1){
@@ -149,10 +170,12 @@ int i = 0;
 	//Alterna señales
 	}else{
 		for(i = 0;i < max;i++){
-			if(i % 2 == 0){
+			if(i % 2 == 0 && contador1 < senial1){
 				valor1 = system(cmd1);
 			}else{
-				valor2 = system(cmd2);
+				if(contador2 < senial2){
+					valor2 = system(cmd2);
+				}
 			}
 			sleep(espera);
 		}
@@ -160,4 +183,13 @@ int i = 0;
 	//Fin del programa
 	sprintf(cmd1,"kill -4 %d",pid);
 	valor1 = system(cmd1);
+}
+
+void fin(int sig){
+		printf("\nMatando a los procesos\n");
+		int valor1 = 0;
+		char cmd1[100];
+		sprintf(cmd1,"kill -4 %d",pid);
+		valor1 = system(cmd1);
+		exit(0);
 }
