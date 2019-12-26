@@ -49,6 +49,8 @@ int listaCerrada;
  */
 
 int main(){
+	//Imprime el pid para poder utilizar el mandador
+	printf("Pid: %d\n",getpid());
 	//Tipo de atendedor 1->Invitacion 2->QR 3->PRO
 	int tipoAtendedor[3]={1,2,3};
 	int i;
