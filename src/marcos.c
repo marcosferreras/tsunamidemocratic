@@ -164,13 +164,15 @@ void *accionesSolicitud(void *structSolicitud){
 	//strcpy(solicitud->id,"1");
 	//if(strcmp("0\0",solicitud->id)==0)	
 	//	printf("Hola\n");
-	
-	//writeLogMessage("1","La solicitud se ha recibido");
+	if(solicitud->tipo==0){
+		printf("ID %s : La solicitud por invitacion se ha registrado\n", solicitud->id);
+		writeLogMessage(solicitud->id,"La solicitud por invitacion se ha registrado");
+	} else {
+		printf("ID %s : La solicitud por QR se ha registrado\n", solicitud->id);
+		writeLogMessage(solicitud->id,"La solicitud por QR se ha registrado");
+	}
 	//printf("Hola\n");
 	//writeLogMessage("1111","5");
-	//TODO Escribir en log
-	printf("ID %s : La solicitud de tipo %d ha sido registrada\n", solicitud->id, solicitud->tipo);
-	printf("ID %s : La solicitud de tipo %d esta esperando (4 segundos)\n", solicitud->id, solicitud->tipo);
 	sleep(4);
 	pthread_mutex_lock(&mutexColaSolicitudes);
 	//Copio el id
@@ -185,7 +187,8 @@ void *accionesSolicitud(void *structSolicitud){
 			printf("%d rand\n",aleatorio);
 			if(aleatorio<=10){
 				//TODO Escribir en log
-				printf("ID %s : La solicitud de tipo %d se ha eliminado por cansarse de esperar\n", solicitud->id, solicitud->tipo);
+				printf("ID %s : La solicitud por invitacion se ha eliminado por cansarse de esperar\n", solicitud->id);
+				writeLogMessage(solicitud->id,"La solicitud por invitacion se ha eliminado por cansarse de esperar");
 				inicializarSolicitud(solicitud);
 				pthread_exit(NULL); 
 			}
@@ -193,7 +196,8 @@ void *accionesSolicitud(void *structSolicitud){
 		} else {
 			if(aleatorio<=30){
 				//TODO Escribir en log
-				printf("ID %s : La solicitud de tipo %d se ha eliminado por no considerarse muy fiable\n", solicitud->id, solicitud->tipo);
+				printf("ID %s : La solicitud por QR se ha eliminado por no considerarse muy fiable\n", solicitud->id);
+				writeLogMessage(solicitud->id,"La solicitud por QR se ha eliminado por no considerarse muy fiable");
 				inicializarSolicitud(solicitud);
 				pthread_exit(NULL); 
 			}
@@ -202,8 +206,8 @@ void *accionesSolicitud(void *structSolicitud){
 		aleatorio = rand()%101;
 		if(aleatorio<=15){
 			//TODO Escribir en log
-			printf("ID %s : La solicitud de tipo %d se ha eliminado por fallo de la aplicacion\n", solicitud->id, solicitud->tipo);	
-			//TODO Pendiente de crear una función que me saque de la cola y reordene el array de la cola, para evitar huecos
+			printf("ID %s : La solicitud se ha eliminado por fallo de la aplicacion\n", solicitud->id);
+			writeLogMessage(solicitud->id,"La solicitud se ha eliminado por fallo de la aplicacion");	
 			inicializarSolicitud(solicitud);
 			pthread_exit(NULL);
 		}
@@ -230,6 +234,8 @@ void *accionesSolicitud(void *structSolicitud){
 		if(participo==0){
 			//Libero hueco en solicitudes
 			inicializarSolicitud(solicitud);
+			printf("ID %s : El usuario esta preparado para la actividad\n", solicitud->id);
+			writeLogMessage(solicitud->id,"El usuario esta preparado para la actividad");
 			pthread_mutex_lock(&mutexColaSocial);
 			while(listaCerrada==true){
 				pthread_mutex_unlock(&mutexColaSocial);
@@ -266,13 +272,18 @@ void *accionesSolicitud(void *structSolicitud){
 	
 }
 void *usuarioEnActividad(void *id){
+	char idTemp[50];
+	sprintf(id,"%d",*(int *)id);
 	sleep(3);
 	pthread_mutex_lock(&mutexColaSolicitudes);
 	contadorActividadesCola--;
 	if(contadorActividadesCola==0){
 		pthread_cond_signal(&condActividades);
 	}
+	pthread_mutex_unlock(&mutexColaSolicitudes);
 	//TODO Escribir en el log
+	printf("ID %s : El usuario ha finalizado la actividad\n", solicitud->id);
+	writeLogMessage(idTemp,"El usuario ha finalizado la actividad");
 	pthread_exit(NULL);
 }
 
@@ -298,6 +309,8 @@ void writeLogMessage (char *id , char *msg) {
 
 }
 void manejadoraSolicitud(int signal){
+	if(signal=="SIGUSR1"){
+		
 }
 void manejadoraFinalizar(int signal){
 	//Temporal
