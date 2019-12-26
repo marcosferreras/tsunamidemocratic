@@ -281,50 +281,59 @@ void *accionesSolicitud(void *structSolicitud){
 	}	
 }
 void *accionesAtendedor(void *ptrs){
-	int aux, num, contador=0, calculo, espera, apto, posicion=0, cafe=0;	
+	int tipoEvaluacion, id, contador=0, calculo, espera, apto, posicion=0, cafe=0;	
 	//printf("Exito %d", *(int *)ptrs);
 	do{
+		contador=0;//😂️
 		apto=true;
 		cafe++;
 		do{
-			if(contador%2==0){
-				aux=*(int *)ptrs;
-				pthread_mutex_lock(&mutexColaSolicitudes);
-			}		
+			if(contador%2==0 || contador==0){
+					pthread_mutex_lock(&mutexColaSolicitudes);
+			}
+					
 			contador++;
-			num=-1;
+			id=-1;
 			for(int i=0;i<tamCola;i++){
-				if((colaSolicitudes[i].tipo==aux || aux==3) && colaSolicitudes[i].atendido==0){
-					if(num>sacarNumero(colaSolicitudes[i].id) || num==-1){
-						num=sacarNumero(colaSolicitudes[i].id);
-						posicion=i;
+				if((colaSolicitudes[i].tipo==tipoEvaluacion || tipoEvaluacion==3) && colaSolicitudes[i].atendido==0){
+					if((id>sacarNumero(colaSolicitudes[i].id) || id==-1)){
+						if(sacarNumero(colaSolicitudes[i].id)!=0){
+							id=sacarNumero(colaSolicitudes[i].id);
+							posicion=i;
+							printf("%d-encontrado: %d\n",*(int *)ptrs, id);
+						}				
 					}
 				}
 			}
-			if(num==-1){
-				aux=3;
+			if(id==-1){
+				tipoEvaluacion=3;
 				if(contador%2==0){
+					//printf("%d-Par: %d\n",*(int *)ptrs,id);
 					pthread_mutex_unlock(&mutexColaSolicitudes);
 					sleep(1);
+				}
 			}
-			}
-		}while(num==-1);
+		}while(id==-1);
 		colaSolicitudes[posicion].atendido=1;
 		pthread_mutex_unlock(&mutexColaSolicitudes);
+		printf("%d-encontrado final: %d\n",*(int *)ptrs,id);
 		srand(time(NULL));
 		calculo=rand()%10+1;
 		if(calculo<=7){
-				espera=rand()%4+1;
+			espera=rand()%4+1;
+			printf("%d-todo correcto\n",*(int *)ptrs);
 		}else if(calculo<=9){
 			espera=rand()%5+2;
+			printf("%d-Error en los datos\n",*(int *)ptrs);
 		}else{
+			printf("%d-Con antecedentes\n",*(int *)ptrs);
 			espera=rand()%5+6;
-			apto==false;
+		apto==false;
 		}
 		sleep(espera);
 		pthread_mutex_lock(&mutexColaSolicitudes);
 			if(apto==false){
-				inicializarSolicitud(&colaSolicitudes[posicion]);
+				colaSolicitudes[posicion].atendido=3;
 			} else{
 				colaSolicitudes[posicion].atendido=2;
 			}

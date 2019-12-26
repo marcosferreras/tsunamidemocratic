@@ -284,22 +284,20 @@ void *accionesAtendedor(void *ptrs){
 		apto=true;
 		cafe++;
 		do{
-			if(contador%2==0){
-				tipoEvaluacion=*(int *)ptrs;
-				pthread_mutex_lock(&mutexColaSolicitudes);
-			}		
+			if(contador%2==0 || contador==0){
+					pthread_mutex_lock(&mutexColaSolicitudes);
+			}
+					
 			contador++;
 			id=-1;
 			for(int i=0;i<tamCola;i++){
 				if((colaSolicitudes[i].tipo==tipoEvaluacion || tipoEvaluacion==3) && colaSolicitudes[i].atendido==0){
-					if(id>sacarNumero(colaSolicitudes[i].id) || id==-1){
-						id=sacarNumero(colaSolicitudes[i].id);
-						posicion=i;
-						if(id==0){
-							id=-1;
-						}else{
-							printf("%d-encontrado: %d, ronda %d\n",*(int *)ptrs, id, contador);
-						}					
+					if((id>sacarNumero(colaSolicitudes[i].id) || id==-1)){
+						if(sacarNumero(colaSolicitudes[i].id)!=0){
+							id=sacarNumero(colaSolicitudes[i].id);
+							posicion=i;
+							printf("%d-encontrado: %d\n",*(int *)ptrs, id);
+						}				
 					}
 				}
 			}
@@ -309,7 +307,7 @@ void *accionesAtendedor(void *ptrs){
 					//printf("%d-Par: %d\n",*(int *)ptrs,id);
 					pthread_mutex_unlock(&mutexColaSolicitudes);
 					sleep(1);
-			}
+				}
 			}
 		}while(id==-1);
 		colaSolicitudes[posicion].atendido=1;
@@ -318,17 +316,20 @@ void *accionesAtendedor(void *ptrs){
 		srand(time(NULL));
 		calculo=rand()%10+1;
 		if(calculo<=7){
-				espera=rand()%4+1;
+			espera=rand()%4+1;
+			printf("%d-todo correcto\n",*(int *)ptrs);
 		}else if(calculo<=9){
 			espera=rand()%5+2;
+			printf("%d-Error en los datos\n",*(int *)ptrs);
 		}else{
+			printf("%d-Con antecedentes\n",*(int *)ptrs);
 			espera=rand()%5+6;
 		apto==false;
 		}
 		sleep(espera);
 		pthread_mutex_lock(&mutexColaSolicitudes);
 			if(apto==false){
-				inicializarSolicitud(&colaSolicitudes[posicion]);
+				colaSolicitudes[posicion].atendido=3;
 			} else{
 				colaSolicitudes[posicion].atendido=2;
 			}
