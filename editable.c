@@ -280,6 +280,7 @@ void *accionesAtendedor(void *ptrs){
 	int tipoEvaluacion, id, contador=0, calculo, espera, apto, posicion=0, cafe=0;	
 	//printf("Exito %d", *(int *)ptrs);
 	do{
+		contador=0;//😂️
 		apto=true;
 		cafe++;
 		do{
