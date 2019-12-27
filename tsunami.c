@@ -283,8 +283,10 @@ void *accionesSolicitud(void *structSolicitud){
 	}	
 }
 void *accionesAtendedor(void *ptrs){
-	int tipoEvaluacion, id, contador=0, calculo, espera, apto, posicion=0, cafe=0;	
+	int tipoEvaluacion, id, contador=0, calculo, espera, apto, posicion=0, cafe=0;
+	char atendedor[25], salida[150];
 	//printf("Exito %d", *(int *)ptrs);
+	sprintf(atendedor,"Atendedor_%d",*(int *)ptrs);
 	do{
 		contador=0;//😂️
 		apto=true;
@@ -302,7 +304,6 @@ void *accionesAtendedor(void *ptrs){
 						if(sacarNumero(colaSolicitudes[i].id)!=0){
 							id=sacarNumero(colaSolicitudes[i].id);
 							posicion=i;
-							printf("%d-encontrado: %d\n",*(int *)ptrs, id);
 						}				
 					}
 				}
@@ -318,21 +319,32 @@ void *accionesAtendedor(void *ptrs){
 		}while(id==-1);
 		colaSolicitudes[posicion].atendido=1;
 		pthread_mutex_unlock(&mutexColaSolicitudes);
-		printf("%d-encontrado final: %d\n",*(int *)ptrs,id);
+		printf("Atendedor_%d: comienza a procesar la solicitud_%d\n",*(int *)ptrs,id);
+		sprintf(salida,"comienza a procesar la solicitud_%d",id);
+		writeLogMessage(atendedor,salida);
 		srand(time(NULL));
 		calculo=rand()%10+1;
 		if(calculo<=7){
 			espera=rand()%4+1;
-			printf("%d-todo correcto\n",*(int *)ptrs);
+			printf("Atendedor_%d: todo correcto al procesar la solicitud_%d\n",*(int *)ptrs,id);
+			sprintf(salida,"todo correcto al procesar la solicitud_%d",id);
+			writeLogMessage(atendedor,salida);
 		}else if(calculo<=9){
 			espera=rand()%5+2;
-			printf("%d-Error en los datos\n",*(int *)ptrs);
+			printf("Atendedor_%d: ha ocurrido un error inerperado al procesar los datos de la solicitud_%d\n",*(int *)ptrs,id);
+			sprintf(salida,"ha ocurrido un error inerperado al procesar los datos de la solicitud_%d",id);
+			writeLogMessage(atendedor,salida);
 		}else{
-			printf("%d-Con antecedentes\n",*(int *)ptrs);
+			printf("Atendedor_%d: el usuario de solicitud_%d posee antecedentes\n",*(int *)ptrs,id);
+			sprintf(salida,"el usuario de solicitud_%d posee antecedentes",id);
+			writeLogMessage(atendedor,salida);
 			espera=rand()%5+6;
-		apto==false;
+			apto==false;
 		}
 		sleep(espera);
+		printf("Atendedor_%d: el tiempo necesario para atender la solicitud_%d ha sido %d\n",*(int *)ptrs,id,espera);
+		sprintf(salida,"el tiempo necesario para atender la solicitud_%d ha sido %d",id,espera);
+		writeLogMessage(atendedor,salida);
 		pthread_mutex_lock(&mutexColaSolicitudes);
 			if(apto==false){
 				colaSolicitudes[posicion].atendido=3;
@@ -340,7 +352,12 @@ void *accionesAtendedor(void *ptrs){
 				colaSolicitudes[posicion].atendido=2;
 			}
 		pthread_mutex_unlock(&mutexColaSolicitudes);
-		if(cafe%5==0) sleep(10);
+		if(cafe%5==0){
+			printf("Atendedor_%d: procede a tomarse un cafe\n",*(int *)ptrs);
+			sprintf(salida,"procede a tomarse un cafe");
+			writeLogMessage(atendedor,salida);
+			sleep(10);
+		}
 	}while(true);
 }
 void *accionesCoordinadorSocial(){

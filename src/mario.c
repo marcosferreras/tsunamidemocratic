@@ -120,8 +120,8 @@ void *accionesAtendedor(void *ptrs){
 			}
 		pthread_mutex_unlock(&mutexColaSolicitudes);
 		if(cafe%5==0){
-			printf("Atendedor_%d: procede a tomarse un cafe☕️\n",*(int *)ptrs);
-			sprintf(salida,"procede a tomarse un cafe☕️");
+			printf("Atendedor_%d: procede a tomarse un cafe\n",*(int *)ptrs);
+			sprintf(salida,"procede a tomarse un cafe");
 			writeLogMessage(atendedor,salida);
 			sleep(10);
 		}
