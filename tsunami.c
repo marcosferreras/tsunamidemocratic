@@ -243,14 +243,13 @@ void *accionesSolicitud(void *structSolicitud){
 		//0->Si Participo 1->No Participo
 		if(participo==0){
 			//Libero hueco en solicitudes
-			printf("ID %s : El usuario esta preparado para la actividad\n", solicitud->id);
-			writeLogMessage(solicitud->id,"El usuario esta preparado para la actividad");
-			pthread_mutex_lock(&mutexColaSolicitudes);
-			inicializarSolicitud(solicitud);
-			pthread_mutex_unlock(&mutexColaSolicitudes);
+			printf("ID %s : El usuario ha decidido participar en una actividad cultural\n", solicitud->id);
+			writeLogMessage(solicitud->id,"El usuario ha decidido participar en una actividad cultural");
 			pthread_mutex_lock(&mutexColaSocial);
 			while(listaCerrada==true){
 				pthread_mutex_unlock(&mutexColaSocial);
+				printf("ID %s : La lista de actividades esta cerrada. Esperando...\n", solicitud->id);
+				writeLogMessage(solicitud->id,"La lista de actividades esta cerrada. Esperando...");
 				sleep(3);
 				pthread_mutex_lock(&mutexColaSocial);
 			}
@@ -260,6 +259,9 @@ void *accionesSolicitud(void *structSolicitud){
 			contadorActividadesCola++;
 			if(contadorActividadesCola==4){
 				//Aviso al coordinador que soy el ultimo
+				printf("ID %s : Soy el ultimo para la actividad. Voy a avisar al coordinador\n", solicitud->id);
+				writeLogMessage(solicitud->id,"Soy el ultimo para la actividad. Voy a avisar al coordinador");
+				listaCerrada = true;
 				pthread_cond_signal(&condActividades);
 			}
 			pthread_mutex_unlock(&mutexColaSocial);
@@ -270,12 +272,18 @@ void *accionesSolicitud(void *structSolicitud){
 			pthread_exit(NULL);
 			
 		} else {
+			printf("ID %s : El usuario ha decidido NO participar en una actividad cultural\n", solicitud->id);
+			writeLogMessage(solicitud->id,"El usuario ha decidido NO participar en una actividad cultural");
 			//Libero espacio en cola de solicitudes
+			pthread_mutex_lock(&mutexColaSolicitudes);
 			inicializarSolicitud(solicitud);
+			pthread_mutex_unlock(&mutexColaSolicitudes);
 		}
 		pthread_exit(NULL);
 	} else if(enAtencion==3){
 		//Solicitud con antecedentes. Libero el hueco en la cola y finalizo hilo.
+		printf("ID %s : El usuario tiene antecedentes y no se puede unir a ninguna actividad\n", solicitud->id);
+		writeLogMessage(solicitud->id,"El usuario tiene antecedentes y no se puede unir a ninguna actividad");
 		pthread_mutex_lock(&mutexColaSolicitudes);
 		inicializarSolicitud(solicitud);
 		pthread_mutex_unlock(&mutexColaSolicitudes);
@@ -288,7 +296,7 @@ void *accionesAtendedor(void *ptrs){
 	//printf("Exito %d", *(int *)ptrs);
 	sprintf(atendedor,"Atendedor_%d",*(int *)ptrs);
 	do{
-		contador=0;//😂️
+		contador=0;
 		apto=true;
 		cafe++;
 		do{
@@ -383,32 +391,29 @@ void *accionesCoordinadorSocial(){
 
 	pthread_mutex_unlock(&mutexColaSocial);
 }
+
 void *usuarioEnActividad(void *id){
-	char idTemp[50];
-	sprintf(id,"%d",*(int *)id);
+	char bufferLog[100];
 	
-	pthread_mutex_lock(&mutexColaSocial);	
-		printf("[UsuarioID: %d -> Se ha unido al Tsunami]\n", *(int *)id);
-		writeLogMessage(id, "Se ha unido al Tsunami");
-	pthread_mutex_unlock(&mutexColaSocial);	
+	printf("Usuario_%d -> Se ha unido a una actividad cultural\n", *(int *)id);
+	sprintf(bufferLog,"Usuario_%d -> Se ha unido a una actividad cultural\n", *(int *)id);
+	writeLogMessage("", bufferLog);
+
 	
 	sleep(3);
 
 	pthread_mutex_lock(&mutexColaSocial);
-		printf("[UsuarioID: %d -> Se ha marchado del Tsunami]\n", *(int *)id);
-		writeLogMessage(id, "Se ha marchado del Tsunami");
-	pthread_mutex_unlock(&mutexColaSocial);
-
-	pthread_mutex_lock(&mutexColaSolicitudes);
 	contadorActividadesCola--;
 	if(contadorActividadesCola==0){
 		pthread_cond_signal(&condActividades);
 	}
-	pthread_mutex_unlock(&mutexColaSolicitudes);
+	pthread_mutex_unlock(&mutexColaSocial);
+	printf("Usuario_%d -> Ha finalizado la actividad cultural\n", *(int *)id);
+	sprintf(bufferLog,"Usuario_%d -> Ha finalizado la actividad cultural\n", *(int *)id);
+	writeLogMessage("", bufferLog);
 	//TODO Escribir en el log
 	pthread_exit(NULL);
 }
-
 //Escribimos en el log
 void writeLogMessage (char *id , char *msg) {
 	int i;
