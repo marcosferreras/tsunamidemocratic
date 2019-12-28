@@ -151,9 +151,11 @@ void nuevaSolicitud(int signal){
 	if(i == tamCola){
 		printf("Cola de solicitudes llena, Solicitud ignorada\n");
 		sprintf(buffer,"Cola de solicitudes llena, Solicitud ignorada\n");
-	}
+		writeLogMessage ( "ERROR" , buffer);
+	}else{
 //Envio el mensaje guardado en el buffer a la funcion writeLogMessage
-	writeLogMessage ( solicitud->id , buffer);
+		writeLogMessage ( solicitud->id , buffer);
+	}
 }
 /**
  * Función que se encarga de las acciones de la solicitud
@@ -463,4 +465,3 @@ int sacarNumero(char *id){
 	}
 	return numero;
 }
-
