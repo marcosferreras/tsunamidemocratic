@@ -345,8 +345,8 @@ void *accionesAtendedor(void *ptrs){
 			writeLogMessage(atendedor,salida);
 		}else if(calculo<=9){
 			espera=rand()%5+2;
-			printf("Atendedor_%d: ha ocurrido un error inerperado al procesar los datos de la solicitud_%d\n",*(int *)ptrs,id);
-			sprintf(salida,"ha ocurrido un error inerperado al procesar los datos de la solicitud_%d",id);
+			printf("Atendedor_%d: existe un error en los datos de la solicitud_%d\n",*(int *)ptrs,id);
+			sprintf(salida,"existe un error en los datos de la solicitud_%d",id);
 			writeLogMessage(atendedor,salida);
 		}else{
 			printf("Atendedor_%d: el usuario de solicitud_%d posee antecedentes\n",*(int *)ptrs,id);
@@ -375,27 +375,28 @@ void *accionesAtendedor(void *ptrs){
 	}while(true);
 }
 void *accionesCoordinadorSocial(){
-
-	pthread_mutex_lock(&mutexColaSocial);
-	pthread_cond_wait(&condActividades, &mutexColaSocial);
-
-	listaCerrada = true;
-	writeLogMessage("", "Lista cerrada");
-
 	pthread_t usuario1, usuario2, usuario3, usuario4;
+	while(true){
+		pthread_mutex_lock(&mutexColaSocial);
+		pthread_cond_wait(&condActividades, &mutexColaSocial);
 
-	pthread_create(&usuario1, NULL, usuarioEnActividad, (void *) &idUsuariosActividad[0]);
-	pthread_create(&usuario2, NULL, usuarioEnActividad, (void *) &idUsuariosActividad[1]);
-	pthread_create(&usuario3, NULL, usuarioEnActividad, (void *) &idUsuariosActividad[2]);
-	pthread_create(&usuario4, NULL, usuarioEnActividad, (void *) &idUsuariosActividad[3]);
+		listaCerrada = true;
+		writeLogMessage("", "Lista cerrada");
 
 
-	pthread_cond_wait(&condActividades, &mutexColaSocial);
+		pthread_create(&usuario1, NULL, usuarioEnActividad, (void *) &idUsuariosActividad[0]);
+		pthread_create(&usuario2, NULL, usuarioEnActividad, (void *) &idUsuariosActividad[1]);
+		pthread_create(&usuario3, NULL, usuarioEnActividad, (void *) &idUsuariosActividad[2]);
+		pthread_create(&usuario4, NULL, usuarioEnActividad, (void *) &idUsuariosActividad[3]);
 
-	listaCerrada = false;
-	writeLogMessage("", "Lista abierta de nuevo");
 
-	pthread_mutex_unlock(&mutexColaSocial);
+		pthread_cond_wait(&condActividades, &mutexColaSocial);
+
+		listaCerrada = false;
+		writeLogMessage("", "Lista abierta de nuevo");
+
+		pthread_mutex_unlock(&mutexColaSocial);
+	}
 }
 
 void *usuarioEnActividad(void *id){
@@ -411,16 +412,17 @@ void *usuarioEnActividad(void *id){
 	pthread_mutex_lock(&mutexColaSocial);
 	contadorActividadesCola--;
 	if(contadorActividadesCola==0){
+		printf("Usuario_%d -> Soy el último en finalizar la actividad. Voy a avisar al coordinador\n", *(int *)id);
+		sprintf(bufferLog,"Usuario_%d -> Soy el último en finalizar la actividad. Voy a avisar al coordinador\n", *(int *)id);
+		writeLogMessage("",bufferLog);
 		pthread_cond_signal(&condActividades);
 	}
-	pthread_mutex_unlock(&mutexColaSocial);
 	printf("Usuario_%d -> Ha finalizado la actividad cultural\n", *(int *)id);
 	sprintf(bufferLog,"Usuario_%d -> Ha finalizado la actividad cultural\n", *(int *)id);
 	writeLogMessage("", bufferLog);
-	//TODO Escribir en el log
+	pthread_mutex_unlock(&mutexColaSocial);
 	pthread_exit(NULL);
 }
-//Escribimos en el log
 void writeLogMessage (char *id , char *msg) {
 	int i;
 	pthread_mutex_lock(&mutexLog);
