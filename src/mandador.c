@@ -75,14 +75,14 @@ int senial1 = 0,senial2 = 0,alternar = 0, defecto = 0,espera = 0, avanzado = 0,r
 		}
 	//Por defecto
 	}else{
-		printf("Valores por defecto,30,30,1,0\n");
-		ejecutar(30,30,1,pid,0);
+		printf("Valores por defecto,10,7,1,1\n");
+		ejecutar(10,7,1,pid,1);
 	}
 }
 
 void ejecutar(int senial1,int senial2,int alternar,int pid, int espera){
 	int i = 0;
-	int max = senial1+senial2;
+	int max = senial1+senial2, logs = 0;
 	char cmd1[100];
 	char cmd2[100];
 	sprintf(cmd1,"kill -10 %d",pid);
@@ -118,11 +118,19 @@ void ejecutar(int senial1,int senial2,int alternar,int pid, int espera){
 	//Fin del programa
 	sprintf(cmd1,"kill -2 %d",pid);
 	valor1 = system(cmd1);
+	//Logs
+	printf("Desea abrir los logs?\n");
+	printf("1- Si\n2- No\n");
+	scanf("%d",&logs);
+	if(logs == 1){
+		sprintf(cmd1,"gedit log.txt &");
+		valor1 = system(cmd1);
+	}
 }
 
 void ejecutarAvanzado(int senial1,int senial2,int alternar,int espera,int pid,int repetido,int patron1,int patron2){
 int i = 0;
-	int max = senial1+senial2;
+	int max = senial1+senial2, logs = 0;
 	char cmd1[100];
 	char cmd2[100];
 	sprintf(cmd1,"kill -10 %d",pid);
@@ -183,13 +191,28 @@ int i = 0;
 	//Fin del programa
 	sprintf(cmd1,"kill -2 %d",pid);
 	valor1 = system(cmd1);
+	//Logs
+	printf("Desea abrir los logs?\n");
+	printf("1- Si\n2- No\n");
+	scanf("%d",&logs);
+	if(logs == 1){
+		sprintf(cmd1,"gedit log.txt &");
+		valor1 = system(cmd1);
+	}
 }
 
 void fin(int sig){
 		printf("\nMatando a los procesos\n");
-		int valor1 = 0;
+		int valor1 = 0, logs = 0;
 		char cmd1[100];
 		sprintf(cmd1,"kill -2 %d",pid);
 		valor1 = system(cmd1);
+		printf("Desea abrir los logs?\n");
+		printf("1- Si\n2- No\n");
+		scanf("%d",&logs);
+		if(logs == 1){
+			sprintf(cmd1,"gedit log.txt &");
+			valor1 = system(cmd1);
+		}
 		exit(0);
 }
