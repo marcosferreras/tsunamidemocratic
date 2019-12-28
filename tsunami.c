@@ -11,6 +11,7 @@
 #define true 1
 #define false 0
 //Defino las funciones
+int salidaApta();
 void *accionesAtendedor(void *ptr);
 void *accionesSolicitud(void *ptr);
 void manejadoraSolicitud(int signal);
@@ -22,6 +23,7 @@ void *accionesCoordinadorSocial();
 pthread_mutex_t mutexLog;
 pthread_mutex_t mutexColaSolicitudes;
 pthread_mutex_t mutexColaSocial;
+pthread_mutex_t salir;
 pthread_cond_t condActividades;
 FILE *logFile;
 //Condicion de salida
@@ -81,6 +83,7 @@ int main(){
 	pthread_mutex_init(&mutexLog, NULL);
 	pthread_mutex_init(&mutexColaSolicitudes, NULL);
 	pthread_cond_init(&condActividades, NULL);
+	pthread_mutex_init(&salir, NULL);
 	//Encargados de las solicitudes de:
 	pthread_t atendedor_1, atendedor_2, atendedor_3, coordinador;
 	//Creamos los hilos de los "usuarios destacados"
@@ -312,12 +315,23 @@ void *accionesAtendedor(void *ptrs){
 	int tipoEvaluacion, id, contador=0, calculo, espera, apto, posicion=0, cafe=0;
 	char atendedor[25], salida[150];
 	//printf("Exito %d", *(int *)ptrs);
-	sprintf(atendedor,"Atendedor_%d",*(int *)ptrs);
 	do{
 		contador=0;
 		apto=true;
 		cafe++;
 		do{
+			pthread_mutex_lock(&salir);
+			if(finPrograma) {
+				pthread_mutex_lock(&mutexColaSolicitudes);
+				if(salidaApta()){
+						printf("Atendedor_%d: la cola de solicitudes esta vacia y se procede a la finalizacion del programa\n",*(int *)ptrs);
+						sprintf(salida,"la cola de solicitudes esta vacia y se procede a la finalizacion del programa");
+						writeLogMessage(atendedor,salida);
+						exit(0);
+				}
+				pthread_mutex_unlock(&mutexColaSolicitudes);
+			}	
+			pthread_mutex_unlock(&salir);
 			if(contador%2==0 || contador==0){
 					pthread_mutex_lock(&mutexColaSolicitudes);
 			}
@@ -384,6 +398,10 @@ void *accionesAtendedor(void *ptrs){
 			writeLogMessage(atendedor,salida);
 			sleep(10);
 		}
+		
+	
+
+
 	}while(true);
 }
 void *accionesCoordinadorSocial(){
@@ -462,11 +480,12 @@ void manejadoraSolicitud(int signal){
 void manejadoraFinalizar(int signal){
 	//Salida del programa, se cierra la cola
 	char buffer[100];
+	pthread_mutex_lock(&salir);
 	finPrograma = true;
+	pthread_mutex_unlock(&salir);
 	printf("La cola de solicitudes ha sido cerrada\n");
 	sprintf(buffer,"La cola de solicitudes ha sido cerrada\n");
 	writeLogMessage ( "FIN" , buffer);
-	exit(0);
 }
 /**
  *@author Marcos Ferreras
@@ -488,3 +507,18 @@ int sacarNumero(char *id){
 	}
 	return numero;
 }
+
+int salidaApta(){
+	int output=true;
+	for(int i=0;i<tamCola;i++){
+		if(strcmp(colaSolicitudes[i].id,"0")!=0){
+			output=false;
+		}
+	}
+	return output;
+}
+
+
+
+
+
