@@ -24,6 +24,8 @@ pthread_mutex_t mutexColaSolicitudes;
 pthread_mutex_t mutexColaSocial;
 pthread_cond_t condActividades;
 FILE *logFile;
+//Condicion de salida
+int finPrograma = false;
 typedef struct solicitud {
 	char id[50];
 	//0->Sin atender 1->En proceso de atención 2->Atendido 3->Atendido con Antecedentes
@@ -97,7 +99,7 @@ int main(){
 
 void nuevaSolicitud(int signal){
 	printf("Nueva solicitud\n");
-//Variable para imprimir los mensajes /*sprintf(buffer, "mensaje");*/ /*writeLogMessage (char *id , char *msg)*/
+	//Variable para imprimir los mensajes /*sprintf(buffer, "mensaje");*/ /*writeLogMessage (char *id , char *msg)*/
 	char buffer[500];
 	//Declaro la solicitud
 	Solicitud *solicitud;
@@ -107,58 +109,68 @@ void nuevaSolicitud(int signal){
 	int guardado = false;
 	//Variable para el numero de solicitud
 	int valorId = 0;
-//Seccion Critica
-	pthread_mutex_lock(&mutexColaSolicitudes);
-	//Compruebo el espacio en la lista de solicitudes
-	while((i < tamCola) && (guardado == false)){
-		//Si el hueco de la solicitud esta libre, entro
-		if(strcmp(colaSolicitudes[i].id,"0")==0){
-			solicitud = &colaSolicitudes[i];
-			//Introduzco el identificador con su valor y lo incremento
-			contadorSolicitudes++;
-			//Guardo el valor en un char para introducirlo en id
-			valorId = contadorSolicitudes;
-			//Invitacion
-			if(signal == SIGUSR1){
-				solicitud->tipo = 0;
-			//QR
-			}else{
-				solicitud->tipo = 1;
-			}
-			//Solicitud guardada, salgo del bucle
-			guardado = true;
-		//Posicion ya ocupada
-		}	
-	i++;
+	//Cola de solicitudes aun abierta
+	if(finPrograma == false){
+	//Seccion Critica
+		pthread_mutex_lock(&mutexColaSolicitudes);
+		//Compruebo el espacio en la lista de solicitudes
+		while((i < tamCola) && (guardado == false)){
+			//Si el hueco de la solicitud esta libre, entro
+			if(strcmp(colaSolicitudes[i].id,"0")==0){
+				solicitud = &colaSolicitudes[i];
+				//Introduzco el identificador con su valor y lo incremento
+				contadorSolicitudes++;
+				//Guardo el valor en un char para introducirlo en id
+				valorId = contadorSolicitudes;
+				//Invitacion
+				if(signal == SIGUSR1){
+					solicitud->tipo = 0;
+				//QR
+				}else{
+					solicitud->tipo = 1;
+				}
+				//Solicitud guardada, salgo del bucle
+				guardado = true;
+			//Posicion ya ocupada
+			}	
+		i++;
+		}
+	//Fin de la seccion critica
+		pthread_mutex_unlock(&mutexColaSolicitudes);
+		if(guardado == true){
+			//Introduzco el numero en el identificador de la solicitud
+			sprintf(solicitud->id,"solicitud_%d",valorId);
+				printf("%s añadida a la lista de solicitudes\n",solicitud->id);
+				sprintf(buffer, "%s añadida a la lista de solicitudes\n",solicitud->id);
+				printf("%s lista para ser atendida\n",solicitud->id);
+				sprintf(buffer, "%s lista para ser atendida\n",solicitud->id);
+				//Indico el tipo de solicitud segun la senial
+				//Invitacion
+				if(signal == SIGUSR1){
+					printf("%s de invitacion\n",solicitud->id);
+					sprintf(buffer, "%s de invitacion\n",solicitud->id);
+				//QR
+				}else{
+					printf("%s por codigo QR\n",solicitud->id);
+					sprintf(buffer,"%s por codigo QR\n",solicitud->id);
+				}
+			//Mando la solicitud para ser procesada
+			pthread_create(&solicitud->hilo, NULL, accionesSolicitud, (void *) solicitud);
+			//Envio el mensaje guardado en el buffer a la funcion writeLogMessage
+			writeLogMessage ( solicitud->id , buffer);
+		}
 	}
-//Fin de la seccion critica
-	pthread_mutex_unlock(&mutexColaSolicitudes);
-	if(guardado == true){
-		//Introduzco el numero en el identificador de la solicitud
-		sprintf(solicitud->id,"solicitud_%d",valorId);
-			printf("%s añadida a la lista de solicitudes\n",solicitud->id);
-			sprintf(buffer, "%s añadida a la lista de solicitudes\n",solicitud->id);
-			printf("%s lista para ser atendida\n",solicitud->id);
-			sprintf(buffer, "%s lista para ser atendida\n",solicitud->id);
-			//Indico el tipo de solicitud segun la senial
-			//Invitacion
-			if(signal == SIGUSR1){
-				printf("%s de invitacion\n",solicitud->id);
-				sprintf(buffer, "%s de invitacion\n",solicitud->id);
-			//QR
-			}else{
-				printf("%s por codigo QR\n",solicitud->id);
-				sprintf(buffer,"%s por codigo QR\n",solicitud->id);
-			}
-		//Mando la solicitud para ser procesada
-		pthread_create(&solicitud->hilo, NULL, accionesSolicitud, (void *) solicitud);
-		//Envio el mensaje guardado en el buffer a la funcion writeLogMessage
-		writeLogMessage ( solicitud->id , buffer);
-	//Cola llena
-	}else{
-		printf("Cola de solicitudes llena, Solicitud ignorada\n");
-		sprintf(buffer,"Cola de solicitudes llena, Solicitud ignorada\n");
-		writeLogMessage ( "ERROR" , buffer);
+	//Cola llena o Cola de solicitudes cerrada
+	if((finPrograma == true) || (guardado == false)){
+		if(finPrograma == true){
+			printf("Imposible entrar en la cola, ha sido cerrada\n");
+			sprintf(buffer,"Imposible entrar en la cola, ha sido cerrada\n");
+			writeLogMessage ( "FIN" , buffer);
+		}else{
+			printf("Cola de solicitudes llena, Solicitud ignorada\n");
+			sprintf(buffer,"Cola de solicitudes llena, Solicitud ignorada\n");
+			writeLogMessage ( "ERROR" , buffer);
+		}
 	}
 }
 /**
@@ -448,7 +460,12 @@ void manejadoraSolicitud(int signal){
 		
 }
 void manejadoraFinalizar(int signal){
-	//Temporal
+	//Salida del programa, se cierra la cola
+	char buffer[100];
+	finPrograma = true;
+	printf("La cola de solicitudes ha sido cerrada\n");
+	sprintf(buffer,"La cola de solicitudes ha sido cerrada\n");
+	writeLogMessage ( "FIN" , buffer);
 	exit(0);
 }
 /**
