@@ -312,15 +312,18 @@ void *accionesSolicitud(void *structSolicitud){
 	}	
 }
 void *accionesAtendedor(void *ptrs){
-	int tipoEvaluacion, id, contador=0, calculo, espera, apto, posicion=0, cafe=0,i;
+	//El atendedor 1 atiende solicitudes tipo 0, el dos tipo 1 y el 3 todas las anteriores
+	int tipoEvaluacion,tipoEvaluacionEstatica, id, contador=0, calculo, espera, apto, posicion=0, cafe=0,i;
 	char atendedor[25], salida[150];
 	//printf("Exito %d", *(int *)ptrs);
 	sprintf(atendedor,"Atendedor_%d",*(int *)ptrs);
+	tipoEvaluacionEstatica=*(int *)ptrs-1;
 	do{
 		contador=0;
 		apto=true;
 		cafe++;
 		do{
+			printf("out2\n");
 			pthread_mutex_lock(&salir);
 			if(finPrograma) {
 				pthread_mutex_lock(&mutexColaSolicitudes);
@@ -328,20 +331,21 @@ void *accionesAtendedor(void *ptrs){
 						printf("Atendedor_%d: la cola de solicitudes esta vacia y se procede a la finalizacion del programa\n",*(int *)ptrs);
 						sprintf(salida,"la cola de solicitudes esta vacia y se procede a la finalizacion del programa");
 						writeLogMessage(atendedor,salida);
+						printf("out1\n");
 						exit(0);
 				}
 				pthread_mutex_unlock(&mutexColaSolicitudes);
 			}	
 			pthread_mutex_unlock(&salir);
 			if(contador%2==0 || contador==0){
-					tipoEvaluacion=*(int *)ptrs;
+					tipoEvaluacion=tipoEvaluacionEstatica;
 					pthread_mutex_lock(&mutexColaSolicitudes);
 			}
 					
 			contador++;
 			id=-1;
 			for(i=0;i<tamCola;i++){
-				if((colaSolicitudes[i].tipo==tipoEvaluacion || tipoEvaluacion==3) && colaSolicitudes[i].atendido==0){
+				if((colaSolicitudes[i].tipo==tipoEvaluacion || tipoEvaluacion==2) && colaSolicitudes[i].atendido==0){
 					if((id>sacarNumero(colaSolicitudes[i].id) || id==-1)){
 						if(sacarNumero(colaSolicitudes[i].id)!=0){
 							id=sacarNumero(colaSolicitudes[i].id);
@@ -351,7 +355,7 @@ void *accionesAtendedor(void *ptrs){
 				}
 			}
 			if(id==-1){
-				tipoEvaluacion=3;
+				tipoEvaluacion=2;
 				if(contador%2==0){
 					//printf("%d-Par: %d\n",*(int *)ptrs,id);
 					pthread_mutex_unlock(&mutexColaSolicitudes);
@@ -387,13 +391,15 @@ void *accionesAtendedor(void *ptrs){
 		printf("Atendedor_%d: el tiempo necesario para atender la solicitud_%d ha sido %d\n",*(int *)ptrs,id,espera);
 		sprintf(salida,"el tiempo necesario para atender la solicitud_%d ha sido %d",id,espera);
 		writeLogMessage(atendedor,salida);
+		printf("out3\n");
 		pthread_mutex_lock(&mutexColaSolicitudes);
-			if(apto==false){
-				colaSolicitudes[posicion].atendido=3;
-			} else{
-				colaSolicitudes[posicion].atendido=2;
-			}
+		if(apto==false){
+			colaSolicitudes[posicion].atendido=3;
+		} else{
+			colaSolicitudes[posicion].atendido=2;
+		}
 		pthread_mutex_unlock(&mutexColaSolicitudes);
+		printf("out4\n");
 		if(cafe%5==0){
 			printf("Atendedor_%d: procede a tomarse un cafe\n",*(int *)ptrs);
 			sprintf(salida,"procede a tomarse un cafe");
@@ -401,9 +407,6 @@ void *accionesAtendedor(void *ptrs){
 			sleep(10);
 		}
 		
-	
-
-
 	}while(true);
 }
 void *accionesCoordinadorSocial(){
