@@ -323,16 +323,19 @@ void *accionesAtendedor(void *ptrs){
 		apto=true;
 		cafe++;
 		do{
-			printf("out2\n");
+			
 			pthread_mutex_lock(&salir);
 			if(finPrograma) {
-				pthread_mutex_lock(&mutexColaSolicitudes);
+				pthread_mutex_unlock(&mutexColaSolicitudes);
 				if(salidaApta()){
 						printf("Atendedor_%d: la cola de solicitudes esta vacia y se procede a la finalizacion del programa\n",*(int *)ptrs);
 						sprintf(salida,"la cola de solicitudes esta vacia y se procede a la finalizacion del programa");
 						writeLogMessage(atendedor,salida);
-						printf("out1\n");
+					
+						pthread_mutex_unlock(&salir);
+						
 						exit(0);
+						pthread_exit(NULL);
 				}
 				pthread_mutex_unlock(&mutexColaSolicitudes);
 			}	
@@ -391,7 +394,7 @@ void *accionesAtendedor(void *ptrs){
 		printf("Atendedor_%d: el tiempo necesario para atender la solicitud_%d ha sido %d\n",*(int *)ptrs,id,espera);
 		sprintf(salida,"el tiempo necesario para atender la solicitud_%d ha sido %d",id,espera);
 		writeLogMessage(atendedor,salida);
-		printf("out3\n");
+	
 		pthread_mutex_lock(&mutexColaSolicitudes);
 		if(apto==false){
 			colaSolicitudes[posicion].atendido=3;
@@ -399,7 +402,7 @@ void *accionesAtendedor(void *ptrs){
 			colaSolicitudes[posicion].atendido=2;
 		}
 		pthread_mutex_unlock(&mutexColaSolicitudes);
-		printf("out4\n");
+		
 		if(cafe%5==0){
 			printf("Atendedor_%d: procede a tomarse un cafe\n",*(int *)ptrs);
 			sprintf(salida,"procede a tomarse un cafe");
@@ -514,11 +517,13 @@ int sacarNumero(char *id){
 
 int salidaApta(){
 	int output=true,i;
+	pthread_mutex_lock(&mutexColaSolicitudes);
 	for(i=0;i<tamCola;i++){
 		if(strcmp(colaSolicitudes[i].id,"0")!=0){
 			output=false;
 		}
 	}
+	pthread_mutex_unlock(&mutexColaSolicitudes);
 	return output;
 }
 
