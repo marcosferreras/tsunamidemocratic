@@ -312,9 +312,10 @@ void *accionesSolicitud(void *structSolicitud){
 	}	
 }
 void *accionesAtendedor(void *ptrs){
-	int tipoEvaluacion, id, contador=0, calculo, espera, apto, posicion=0, cafe=0;
+	int tipoEvaluacion, id, contador=0, calculo, espera, apto, posicion=0, cafe=0,i;
 	char atendedor[25], salida[150];
 	//printf("Exito %d", *(int *)ptrs);
+	sprintf(atendedor,"Atendedor_%d",*(int *)ptrs);
 	do{
 		contador=0;
 		apto=true;
@@ -333,12 +334,13 @@ void *accionesAtendedor(void *ptrs){
 			}	
 			pthread_mutex_unlock(&salir);
 			if(contador%2==0 || contador==0){
+					tipoEvaluacion=*(int *)ptrs;
 					pthread_mutex_lock(&mutexColaSolicitudes);
 			}
 					
 			contador++;
 			id=-1;
-			for(int i=0;i<tamCola;i++){
+			for(i=0;i<tamCola;i++){
 				if((colaSolicitudes[i].tipo==tipoEvaluacion || tipoEvaluacion==3) && colaSolicitudes[i].atendido==0){
 					if((id>sacarNumero(colaSolicitudes[i].id) || id==-1)){
 						if(sacarNumero(colaSolicitudes[i].id)!=0){
@@ -498,9 +500,8 @@ void inicializarSolicitud(Solicitud* solicitud){
 	solicitud->hilo=0;
 }
 int sacarNumero(char *id){
-	int numero=0;
-	int posicion_=0, contador=0;
-	for (int i=0;i<strlen(id);i++){
+	int numero=0,posicion_=0, contador=0,i;
+	for (i=0;i<strlen(id);i++){
 		if(id[i]>='0' && id[i]<='9'){
 			numero=numero*10 + id[i] - '0';
 		}
@@ -509,8 +510,8 @@ int sacarNumero(char *id){
 }
 
 int salidaApta(){
-	int output=true;
-	for(int i=0;i<tamCola;i++){
+	int output=true,i;
+	for(i=0;i<tamCola;i++){
 		if(strcmp(colaSolicitudes[i].id,"0")!=0){
 			output=false;
 		}
