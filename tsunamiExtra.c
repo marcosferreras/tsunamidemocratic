@@ -10,6 +10,7 @@
 #define true 1
 #define false 0
 int tamCola;
+int numAtendedoresPRO;
 //Defino las funciones
 int salidaApta();
 void *accionesAtendedor(void *ptr);
@@ -21,6 +22,7 @@ void writeLogMessage (char *id , char *msg);
 int sacarNumero(char *id);
 void *usuarioEnActividad(void *id);
 void *accionesCoordinadorSocial();
+void creadorAtendedoresPRO();
 pthread_mutex_t mutexLog;
 pthread_mutex_t mutexColaSolicitudes;
 pthread_mutex_t mutexColaSocial;
@@ -59,6 +61,7 @@ int main(int argc, char **argv){
 	//Tipo de atendedor 1->Invitacion 2->QR 3->PRO
 	int tipoAtendedor[3]={1,2,3};
 	int i;
+	char buffer[100];
 	//Tratamiento de señales
 	struct sigaction sSolicitud={0};
 	struct sigaction sFinalizar={0};
@@ -78,10 +81,11 @@ int main(int argc, char **argv){
 	contadorActividadesCola=0;
 	listaCerrada=false;
 	logFile=NULL;
-	if(argc != 2 || atoi(argv[1]) <= 0){
-		printf("Error en lo parametros de ejecucion. Ejecute como ./ejecutable maxSolicitudes[>0]\n");
+	if(argc != 3 || atoi(argv[1]) <= 0){
+		printf("Error en los parametros de ejecucion. Ejecute como ./ejecutable maxSolicitudes[>0] atendedoresPro\n");
 	} else {
 		tamCola=atoi(argv[1]);
+		numAtendedoresPRO = atoi(argv[2]);
 		printf("Cola:%d \n", tamCola);
 		colaSolicitudes = (Solicitud*)malloc(sizeof(Solicitud)*tamCola);
 		for(i=0;i<tamCola;i++){
@@ -96,14 +100,23 @@ int main(int argc, char **argv){
 		pthread_cond_init(&condActividades, NULL);
 		pthread_mutex_init(&salir, NULL);
 		//Encargados de las solicitudes de:
-		pthread_t atendedor_1, atendedor_2, atendedor_3, coordinador;
+		pthread_t atendedor_1, atendedor_2, coordinador;
 		//Creamos los hilos de los "usuarios destacados"
 		//argv[1] numero de solicitudes maximo
 		printf("Iniciando tsunami\n");
 		writeLogMessage("1","Iniciando tsunami");
-		//pthread_create(&atendedor_1, NULL, accionesAtendedor, (void *) &tipoAtendedor[0]);
-		//pthread_create(&atendedor_2, NULL, accionesAtendedor, (void *) &tipoAtendedor[1]);
-		//pthread_create(&atendedor_3, NULL, accionesAtendedor, (void *) &tipoAtendedor[2]);
+		pthread_create(&atendedor_1, NULL, accionesAtendedor, (void *) &tipoAtendedor[0]);
+		sprintf(buffer,"Atendedor_%d ha sido creado\n",tipoAtendedor[0]);
+		writeLogMessage ( "1" , buffer);
+		printf("Atendedor_%d ha sido creado\n",tipoAtendedor[0]);
+		//writeLogMessage("1","Atendedor_%d ha sido creado"tipoAtendedor[0]);
+		pthread_create(&atendedor_2, NULL, accionesAtendedor, (void *) &tipoAtendedor[1]);
+		sprintf(buffer,"Atendedor_%d ha sido creado\n",tipoAtendedor[1]);
+		writeLogMessage ( "1" , buffer);
+		printf("Atendedor_%d ha sido creado\n",tipoAtendedor[1]);
+		//writeLogMessage("1","Atendedor_%d ha sido creado",tipoAtendedor[1]);
+		//Funcion que crea los atendedores PRO en funcion de la variable pasada como argumento
+		creadorAtendedoresPRO(tipoAtendedor);
 		//Creamos el hilo del coordinador
 		pthread_create(&coordinador, NULL, accionesCoordinadorSocial, NULL);
 
@@ -112,6 +125,27 @@ int main(int argc, char **argv){
 		}
 	}
 	return 0;
+}
+/**
+ * Función que crea los hilos de los AtendedoresPRO
+ * @autor Diego Narciandi
+*/
+void creadorAtendedoresPRO(int tipoAtendedor[]){
+	int i = 0;
+	char buffer[100];
+	int atendedoresPRO[numAtendedoresPRO];
+	//Inicializo el vector de atendedoresPRO con sus IDs
+	for(i = 0 ; i < numAtendedoresPRO ; i++){
+		//Empiezo en 3 ya que el atendedor 1 y 2 ya han sido creados
+		atendedoresPRO[i] = i+3;
+	}
+	pthread_t atendedorPRO;
+	for(i = 0 ; i < numAtendedoresPRO ; i++){
+		pthread_create(&atendedorPRO, NULL, accionesAtendedor, (void *) &tipoAtendedor[2]);
+		sprintf(buffer,"Atendedor_%d ha sido creado\n",atendedoresPRO[i]);
+		writeLogMessage ( "1" , buffer);
+		printf("Atendedor_%d ha sido creado\n",atendedoresPRO[i]);
+	}
 }
 
 void nuevaSolicitud(int signal){
@@ -323,6 +357,7 @@ void *accionesSolicitud(void *structSolicitud){
 		pthread_exit(NULL);
 	}	
 }
+
 void *accionesAtendedor(void *ptrs){
 	//El atendedor 1 atiende solicitudes tipo 0, el dos tipo 1 y el 3 todas las anteriores
 	int tipoEvaluacion,tipoEvaluacionEstatica, id, contador=0, calculo, espera, apto, posicion=0, cafe=0,i;
@@ -537,7 +572,7 @@ int salidaApta(){
 void manejadoraSolicitudMaxima(int signal){
 	char movimiento[5];
 	int numeroMovimientos, i;
-	printf("Para reformar la cola seleccione + ampliar - reducir y indique el numero:\n");
+	printf("Para reformar la cola seleccione + ampliar - reducir e indique el numero:\n");
 	scanf("%s",movimiento);
 	numeroMovimientos=atoi(movimiento);
 	if(numeroMovimientos>0){
