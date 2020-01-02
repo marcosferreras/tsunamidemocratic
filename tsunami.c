@@ -461,9 +461,9 @@ void writeLogMessage (char *id , char *msg) {
 	int i;
 	pthread_mutex_lock(&mutexLog);
 	if(logFile==NULL){
-		logFile = fopen ("log.txt", "w") ;
+		logFile = fopen ("registroTiempos.log", "w") ;
 	} else {
-		logFile = fopen ("log.txt", "a") ;
+		logFile = fopen ("registroTiempos.log", "a") ;
 	}
 	// Calculamos la hora actual
 	time_t now = time (0) ;
