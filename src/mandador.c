@@ -123,7 +123,7 @@ void ejecutar(int senial1,int senial2,int alternar,int pid, int espera){
 	printf("1- Si\n2- No\n");
 	scanf("%d",&logs);
 	if(logs == 1){
-		sprintf(cmd1,"gedit log.txt &");
+		sprintf(cmd1,"gedit registroTiempos.log &");
 		valor1 = system(cmd1);
 	}
 }
@@ -196,7 +196,7 @@ int i = 0;
 	printf("1- Si\n2- No\n");
 	scanf("%d",&logs);
 	if(logs == 1){
-		sprintf(cmd1,"gedit log.txt &");
+		sprintf(cmd1,"gedit registroTiempos.log &");
 		valor1 = system(cmd1);
 	}
 }
@@ -211,7 +211,7 @@ void fin(int sig){
 		printf("1- Si\n2- No\n");
 		scanf("%d",&logs);
 		if(logs == 1){
-			sprintf(cmd1,"gedit log.txt &");
+			sprintf(cmd1,"gedit registroTiempos.log &");
 			valor1 = system(cmd1);
 		}
 		exit(0);
