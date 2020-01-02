@@ -101,9 +101,9 @@ int main(int argc, char **argv){
 		//argv[1] numero de solicitudes maximo
 		printf("Iniciando tsunami\n");
 		writeLogMessage("1","Iniciando tsunami");
-		pthread_create(&atendedor_1, NULL, accionesAtendedor, (void *) &tipoAtendedor[0]);
-		pthread_create(&atendedor_2, NULL, accionesAtendedor, (void *) &tipoAtendedor[1]);
-		pthread_create(&atendedor_3, NULL, accionesAtendedor, (void *) &tipoAtendedor[2]);
+		//pthread_create(&atendedor_1, NULL, accionesAtendedor, (void *) &tipoAtendedor[0]);
+		//pthread_create(&atendedor_2, NULL, accionesAtendedor, (void *) &tipoAtendedor[1]);
+		//pthread_create(&atendedor_3, NULL, accionesAtendedor, (void *) &tipoAtendedor[2]);
 		//Creamos el hilo del coordinador
 		pthread_create(&coordinador, NULL, accionesCoordinadorSocial, NULL);
 
@@ -535,12 +535,46 @@ int salidaApta(){
 }
 
 void manejadoraSolicitudMaxima(int signal){
-	
-	colaSolicitudes = realloc(colaSolicitudes,sizeof(Solicitud));
-	pthread_mutex_lock(&mutexColaSolicitudes);
-	tamCola++;
-	inicializarSolicitud(&colaSolicitudes[tamCola]);
-	printf("Cola de solicitudes ampliada\n");
-	writeLogMessage ( "Main" , "La cola de solicitudes ha sido ampliada");
-	pthread_mutex_unlock(&mutexColaSolicitudes);
+	char movimiento[5];
+	int numeroMovimientos, i;
+	printf("Para reformar la cola seleccione + ampliar - reducir y indique el numero:\n");
+	scanf("%s",movimiento);
+	numeroMovimientos=atoi(movimiento);
+	if(numeroMovimientos>0){
+		pthread_mutex_lock(&mutexColaSolicitudes);
+		Solicitud *colaAux = (Solicitud*)malloc(sizeof(Solicitud)*tamCola);
+		for(i=0;i<tamCola;i++){
+			colaAux[i]=colaSolicitudes[i];
+		}
+		colaSolicitudes = realloc(colaSolicitudes,sizeof(Solicitud)*(tamCola+numeroMovimientos));
+		for(i=0;i<tamCola;i++){
+			colaSolicitudes[i]=colaAux[i];
+		}
+		for(i=0;i<numeroMovimientos;i++){
+			inicializarSolicitud(&colaSolicitudes[tamCola + i]);
+		}
+		tamCola=+numeroMovimientos;
+		inicializarSolicitud(&colaSolicitudes[tamCola-1]);
+		pthread_mutex_unlock(&mutexColaSolicitudes);
+		printf("Cola de solicitudes ampliada\n");
+		writeLogMessage ( "Main" , "La cola de solicitudes ha sido ampliada");
+	}else{
+		if(numeroMovimientos>=tamCola){
+			printf("Para preservar la integridad del programa no se realizara esta accion\n");
+		}else{
+			pthread_mutex_lock(&mutexColaSolicitudes);
+			Solicitud *colaAux = (Solicitud*)malloc(sizeof(Solicitud)*tamCola);
+			for(i=0;i<tamCola;i++){
+				colaAux[i]=colaSolicitudes[i];
+			}
+			colaSolicitudes = realloc(colaSolicitudes,sizeof(Solicitud)*(tamCola+numeroMovimientos));
+			for(i=0;i<tamCola+numeroMovimientos;i++){
+				colaSolicitudes[i]=colaAux[i];
+			}
+			tamCola=+numeroMovimientos;
+			pthread_mutex_unlock(&mutexColaSolicitudes);
+			printf("Cola de solicitudes reducida\n");
+			writeLogMessage ( "Main" , "La cola de solicitudes ha sido reducida");
+		}
+	}
 }
