@@ -7,9 +7,9 @@
 #include <signal.h>
 #include <string.h>
 //Tamanio de la cola de solicitudes
-#define tamCola 15
 #define true 1
 #define false 0
+int tamCola;
 //Defino las funciones
 int salidaApta();
 void *accionesAtendedor(void *ptr);
@@ -38,7 +38,7 @@ typedef struct solicitud {
 } Solicitud;
 void inicializarSolicitud(Solicitud* solicitud);
 //Cola de solicitudes
-Solicitud colaSolicitudes[tamCola];
+Solicitud *colaSolicitudes;
 int idUsuariosActividad[4];
 //Para la asignacion de ID a las solicitudes
 int contadorSolicitudes;
@@ -52,7 +52,7 @@ int listaCerrada;
  *	Main
  */
 
-int main(){
+int main(int argc, char **argv){
 	//Imprime el pid para poder utilizar el mandador
 	printf("Pid: %d\n",getpid());
 	//Tipo de atendedor 1->Invitacion 2->QR 3->PRO
@@ -73,31 +73,40 @@ int main(){
 	contadorActividadesCola=0;
 	listaCerrada=false;
 	logFile=NULL;
-	for(i=0;i<tamCola;i++){
-		inicializarSolicitud(&colaSolicitudes[i]);
-	}
-	for(i=0;i<4;i++){
-		idUsuariosActividad[i]=0;
-	}
-	pthread_mutex_init(&mutexColaSocial,NULL);
-	pthread_mutex_init(&mutexLog, NULL);
-	pthread_mutex_init(&mutexColaSolicitudes, NULL);
-	pthread_cond_init(&condActividades, NULL);
-	pthread_mutex_init(&salir, NULL);
-	//Encargados de las solicitudes de:
-	pthread_t atendedor_1, atendedor_2, atendedor_3, coordinador;
-	//Creamos los hilos de los "usuarios destacados"
-	printf("Iniciando tsunami\n");
-	writeLogMessage("1","Iniciando tsunami");
-	pthread_create(&atendedor_1, NULL, accionesAtendedor, (void *) &tipoAtendedor[0]);
-	pthread_create(&atendedor_2, NULL, accionesAtendedor, (void *) &tipoAtendedor[1]);
-	pthread_create(&atendedor_3, NULL, accionesAtendedor, (void *) &tipoAtendedor[2]);
-	//Creamos el hilo del coordinador
-	pthread_create(&coordinador, NULL, accionesCoordinadorSocial, NULL);
+	if(argc != 2 || atoi(argv[1]) <= 0){
+		printf("Error en lo parametros de ejecucion. Ejecute como ./ejecutable maxSolicitudes[>0]\n");
+	} else {
+		tamCola=atoi(argv[1]);
+		printf("Cola:%d \n", tamCola);
+		colaSolicitudes = (Solicitud*)malloc(sizeof(Solicitud)*tamCola);
+		for(i=0;i<tamCola;i++){
+			inicializarSolicitud(&colaSolicitudes[i]);
+		}
+		for(i=0;i<4;i++){
+			idUsuariosActividad[i]=0;
+		}
+		pthread_mutex_init(&mutexColaSocial,NULL);
+		pthread_mutex_init(&mutexLog, NULL);
+		pthread_mutex_init(&mutexColaSolicitudes, NULL);
+		pthread_cond_init(&condActividades, NULL);
+		pthread_mutex_init(&salir, NULL);
+		//Encargados de las solicitudes de:
+		pthread_t atendedor_1, atendedor_2, atendedor_3, coordinador;
+		//Creamos los hilos de los "usuarios destacados"
+		//argv[1] numero de solicitudes maximo
+		printf("Iniciando tsunami\n");
+		writeLogMessage("1","Iniciando tsunami");
+		pthread_create(&atendedor_1, NULL, accionesAtendedor, (void *) &tipoAtendedor[0]);
+		pthread_create(&atendedor_2, NULL, accionesAtendedor, (void *) &tipoAtendedor[1]);
+		pthread_create(&atendedor_3, NULL, accionesAtendedor, (void *) &tipoAtendedor[2]);
+		//Creamos el hilo del coordinador
+		pthread_create(&coordinador, NULL, accionesCoordinadorSocial, NULL);
 
-	while(true){
-		pause();
+		while(true){
+			pause();
+		}
 	}
+	return 0;
 }
 
 void nuevaSolicitud(int signal){
@@ -257,7 +266,6 @@ void *accionesSolicitud(void *structSolicitud){
 	//Al salir de este bucle no he soltado el mutex. En este punto lo desbloqueo, y decido si me uno a una actividad social o no (Si puedo).
 	enAtencion=solicitud->atendido;
 	pthread_mutex_unlock(&mutexColaSolicitudes);
-	printf("Flag Atendido:%d",enAtencion);
 	if(enAtencion == 2){
 		participo=rand()%2;
 		//0->Si Participo 1->No Participo
