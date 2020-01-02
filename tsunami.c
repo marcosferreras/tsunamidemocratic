@@ -208,11 +208,9 @@ void *accionesSolicitud(void *structSolicitud){
 	enAtencion=solicitud->atendido;
 	//Mientras esté sin atender
 	while(enAtencion==0){
-		printf("%d\n",enAtencion);
 		//Invitación
 		aleatorio = rand()%101;
 		if(solicitud->tipo==0){
-			printf("%d rand\n",aleatorio);
 			if(aleatorio<=10){
 				//TODO Escribir en log
 				printf("ID %s : La solicitud por invitacion se ha eliminado por cansarse de esperar\n", solicitud->id);
@@ -259,6 +257,7 @@ void *accionesSolicitud(void *structSolicitud){
 	//Al salir de este bucle no he soltado el mutex. En este punto lo desbloqueo, y decido si me uno a una actividad social o no (Si puedo).
 	enAtencion=solicitud->atendido;
 	pthread_mutex_unlock(&mutexColaSolicitudes);
+	printf("Flag Atendido:%d",enAtencion);
 	if(enAtencion == 2){
 		participo=rand()%2;
 		//0->Si Participo 1->No Participo
@@ -388,7 +387,7 @@ void *accionesAtendedor(void *ptrs){
 			sprintf(salida,"el usuario de solicitud_%d posee antecedentes",id);
 			writeLogMessage(atendedor,salida);
 			espera=rand()%5+6;
-			apto==false;
+			apto=false;
 		}
 		sleep(espera);
 		printf("Atendedor_%d: el tiempo necesario para atender la solicitud_%d ha sido %d\n",*(int *)ptrs,id,espera);
@@ -438,11 +437,10 @@ void *accionesCoordinadorSocial(){
 }
 
 void *usuarioEnActividad(void *id){
-	char bufferLog[100];
-	
+	char idUser[50];
+	sprintf(id,"Usuario_%d", *(int *)id);
 	printf("Usuario_%d -> Se ha unido a una actividad cultural\n", *(int *)id);
-	sprintf(bufferLog,"Usuario_%d -> Se ha unido a una actividad cultural\n", *(int *)id);
-	writeLogMessage("", bufferLog);
+	writeLogMessage(idUser, "Se ha unido a una actividad cultural");
 
 	
 	sleep(3);
@@ -451,13 +449,11 @@ void *usuarioEnActividad(void *id){
 	contadorActividadesCola--;
 	if(contadorActividadesCola==0){
 		printf("Usuario_%d -> Soy el último en finalizar la actividad. Voy a avisar al coordinador\n", *(int *)id);
-		sprintf(bufferLog,"Usuario_%d -> Soy el último en finalizar la actividad. Voy a avisar al coordinador\n", *(int *)id);
-		writeLogMessage("",bufferLog);
+		writeLogMessage(id,"Soy el último en finalizar la actividad. Voy a avisar al coordinador");
 		pthread_cond_signal(&condActividades);
 	}
 	printf("Usuario_%d -> Ha finalizado la actividad cultural\n", *(int *)id);
-	sprintf(bufferLog,"Usuario_%d -> Ha finalizado la actividad cultural\n", *(int *)id);
-	writeLogMessage("", bufferLog);
+	writeLogMessage(id, "Ha finalizado la actividad cultural");
 	pthread_mutex_unlock(&mutexColaSocial);
 	pthread_exit(NULL);
 }
@@ -487,13 +483,11 @@ void manejadoraSolicitud(int signal){
 }
 void manejadoraFinalizar(int signal){
 	//Salida del programa, se cierra la cola
-	char buffer[100];
 	pthread_mutex_lock(&salir);
 	finPrograma = true;
 	pthread_mutex_unlock(&salir);
 	printf("La cola de solicitudes ha sido cerrada\n");
-	sprintf(buffer,"La cola de solicitudes ha sido cerrada\n");
-	writeLogMessage ( "FIN" , buffer);
+	writeLogMessage ( "FIN" , "La cola de solicitudes ha sido cerrada");
 }
 /**
  *@author Marcos Ferreras
