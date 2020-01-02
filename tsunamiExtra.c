@@ -16,6 +16,7 @@ void *accionesAtendedor(void *ptr);
 void *accionesSolicitud(void *ptr);
 void manejadoraSolicitud(int signal);
 void manejadoraFinalizar(int signal);
+void manejadoraSolicitudMaxima(int signal);
 void writeLogMessage (char *id , char *msg);
 int sacarNumero(char *id);
 void *usuarioEnActividad(void *id);
@@ -66,6 +67,10 @@ int main(int argc, char **argv){
 	sigaction(SIGUSR2,&sSolicitud,NULL);
 	sFinalizar.sa_handler=manejadoraFinalizar;
 	sigaction(SIGINT,&sFinalizar,NULL);
+	//Alterar numero de solicitudes
+	struct sigaction sAnyadirSolicitudMaxima={0};
+	sAnyadirSolicitudMaxima.sa_handler=manejadoraSolicitudMaxima;
+	sigaction(SIGTERM,&sAnyadirSolicitudMaxima,NULL);
 	//Inicializar recursos	
 	srand(time(NULL));
 	contadorSolicitudes=0;
@@ -529,7 +534,13 @@ int salidaApta(){
 	return output;
 }
 
-
-
-
-
+void manejadoraSolicitudMaxima(int signal){
+	
+	colaSolicitudes = realloc(colaSolicitudes,sizeof(Solicitud));
+	pthread_mutex_lock(&mutexColaSolicitudes);
+	tamCola++;
+	inicializarSolicitud(&colaSolicitudes[tamCola]);
+	printf("Cola de solicitudes ampliada\n");
+	writeLogMessage ( "Main" , "La cola de solicitudes ha sido ampliada");
+	pthread_mutex_unlock(&mutexColaSolicitudes);
+}
