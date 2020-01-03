@@ -395,7 +395,7 @@ void *accionesAtendedor(void *ptrs){
 			contador++;
 			id=-1;
 			for(i=0;i<tamCola;i++){
-				if((colaSolicitudes[i].tipo==tipoEvaluacion || tipoEvaluacion==2) && colaSolicitudes[i].atendido==0){
+				if((colaSolicitudes[i].tipo==tipoEvaluacion || tipoEvaluacion>=2) && colaSolicitudes[i].atendido==0){
 					if((id>sacarNumero(colaSolicitudes[i].id) || id==-1)){
 						if(sacarNumero(colaSolicitudes[i].id)!=0){
 							id=sacarNumero(colaSolicitudes[i].id);
