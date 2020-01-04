@@ -18,6 +18,7 @@ void *accionesSolicitud(void *ptr);
 void manejadoraSolicitud(int signal);
 void manejadoraFinalizar(int signal);
 void manejadoraSolicitudMaxima(int signal);
+void manejadoraAtendedorMaxima(int signal);
 void writeLogMessage (char *id , char *msg);
 int sacarNumero(char *id);
 void *usuarioEnActividad(void *id);
@@ -50,6 +51,7 @@ int contadorSolicitudesCola;
 int contadorActividadesCola;
 //Para saber 
 int listaCerrada;
+int tipoAtendedor[3]={1,2,3};
 
 /*
  *	Main
@@ -59,7 +61,7 @@ int main(int argc, char **argv){
 	//Imprime el pid para poder utilizar el mandador
 	printf("Pid: %d\n",getpid());
 	//Tipo de atendedor 1->Invitacion 2->QR 3->PRO
-	int tipoAtendedor[3]={1,2,3};
+//	int tipoAtendedor[3]={1,2,3};
 	int i;
 	char buffer[100];
 	//Tratamiento de señales
@@ -74,6 +76,10 @@ int main(int argc, char **argv){
 	struct sigaction sAnyadirSolicitudMaxima={0};
 	sAnyadirSolicitudMaxima.sa_handler=manejadoraSolicitudMaxima;
 	sigaction(SIGTERM,&sAnyadirSolicitudMaxima,NULL);
+	//Alterar numero de atendedores
+	struct sigaction sAnyadirAtendedorMaxima={0};
+	sAnyadirAtendedorMaxima.sa_handler=manejadoraAtendedorMaxima;
+	sigaction(SIGALRM, &sAnyadirAtendedorMaxima, NULL);
 	//Inicializar recursos	
 	srand(time(NULL));
 	contadorSolicitudes=0;
@@ -611,5 +617,19 @@ void manejadoraSolicitudMaxima(int signal){
 			printf("Cola de solicitudes reducida\n");
 			writeLogMessage ( "Main" , "La cola de solicitudes ha sido reducida");
 		}
+	}
+}
+
+void manejadoraAtendedorMaxima(int signal){
+	int tipo, numero;
+	printf("\nIndique el numero de atendedoresPRO a ampliar\n\n");
+	scanf("%d", &numero);
+
+	if(numero>3){
+		numAtendedoresPRO = numero;
+		creadorAtendedoresPRO(tipoAtendedor);
+	} else {
+		printf("El cambio no tendra repercusion en el programa. Introduca mas de 3 atendedores para incrementarlos.");
+		writeLogMessage("Main","El cambio no tendra repercusion en el programa. Introduca mas de 3 atendedores para incrementarlos.");
 	}
 }
