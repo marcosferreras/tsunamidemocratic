@@ -621,13 +621,29 @@ void manejadoraSolicitudMaxima(int signal){
 }
 
 void manejadoraAtendedorMaxima(int signal){
-	int tipo, numero;
+	int tipo, numero, i;
+	pthread_t atendedorPROampliar;
+	char buffer[100];
+	
 	printf("\nIndique el numero de atendedoresPRO a ampliar\n\n");
 	scanf("%d", &numero);
 
-	if(numero>3){
-		numAtendedoresPRO = numero;
-		creadorAtendedoresPRO(tipoAtendedor);
+	int atendedoresPROampliar[numero];
+
+	if(numero>0){
+		
+		//Inicializo el vector de atendedoresPRO con sus IDs
+		for(i = 0; i < numero; i++){
+			atendedoresPROampliar[i] = i + numAtendedoresPRO + 3;
+		}
+
+		for(i = 0; i < numero; i++){
+			pthread_create(&atendedorPROampliar, NULL, accionesAtendedor, (void *) &tipoAtendedor[2]);
+			//sprintf(buffer,"Atendedor_%d ha sido creado\n",atendedoresPROampliar[i]);
+			writeLogMessage ( "1" , buffer);
+			printf("Atendedor_%d ha sido creado\n",atendedoresPROampliar[i]);
+		}
+		numAtendedoresPRO = numero + numAtendedoresPRO;
 	} else {
 		printf("El cambio no tendra repercusion en el programa. Introduca mas de 3 atendedores para incrementarlos.");
 		writeLogMessage("Main","El cambio no tendra repercusion en el programa. Introduca mas de 3 atendedores para incrementarlos.");
