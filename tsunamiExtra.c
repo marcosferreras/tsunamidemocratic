@@ -363,20 +363,24 @@ void *accionesSolicitud(void *structSolicitud){
 		pthread_exit(NULL);
 	}	
 }
-
+/**
+ *@author Marcos Ferreras
+ *Procesa las solicitudes. 
+*/
 void *accionesAtendedor(void *ptrs){
-	//El atendedor 1 atiende solicitudes tipo 0, el dos tipo 1 y el 3 todas las anteriores
+	//El atendedor 1 atiende solicitudes tipo 0, el 2 tipo 1 y el 3 todas las anteriores
+	//Eltipo de solicitudes viene decidido por el numero del atendedor en cuestion
 	int tipoEvaluacion,tipoEvaluacionEstatica, id, contador=0, calculo, espera, apto, posicion=0, cafe=0,i;
 	char atendedor[25], salida[150];
-	//printf("Exito %d", *(int *)ptrs);
 	sprintf(atendedor,"Atendedor_%d",*(int *)ptrs);
 	tipoEvaluacionEstatica=*(int *)ptrs-1;
 	do{
+		//Se ponen todos los valores a cero antes de cada iteracion
 		contador=0;
 		apto=true;
 		cafe++;
 		do{
-			
+			//Se comprueba si la cola esta cerrada y si lo esta se comprueba que haya usuarios remanentes para saber si puede finalizarse la aplicacion
 			pthread_mutex_lock(&salir);
 			if(finPrograma) {
 				pthread_mutex_unlock(&mutexColaSolicitudes);
@@ -387,12 +391,12 @@ void *accionesAtendedor(void *ptrs){
 					
 						pthread_mutex_unlock(&salir);
 						
-						exit(0);
-						pthread_exit(NULL);
+						exit(0);//Se sale del programa
 				}
 				pthread_mutex_unlock(&mutexColaSolicitudes);
 			}	
 			pthread_mutex_unlock(&salir);
+			//Se vigilan las iteraciones pares ya que en ellas se reinicia el tipo de evaluacion 
 			if(contador%2==0 || contador==0){
 					tipoEvaluacion=tipoEvaluacionEstatica;
 					pthread_mutex_lock(&mutexColaSolicitudes);
@@ -401,8 +405,12 @@ void *accionesAtendedor(void *ptrs){
 			contador++;
 			id=-1;
 			for(i=0;i<tamCola;i++){
+				//Se evalua tambien en >2 para esos atendedores pro que se añadieron de mas
 				if((colaSolicitudes[i].tipo==tipoEvaluacion || tipoEvaluacion>=2) && colaSolicitudes[i].atendido==0){
+					//El valor por defecto del id es-1 y por eso se valora a parte
+					//Se seleccionara siempre la id mas baja ya que en teoria es la que mas tiempo lleva esperando
 					if((id>sacarNumero(colaSolicitudes[i].id) || id==-1)){
+						//Se comprueba el !=0 ya que las id por defecto son 0 y es un numero muy bajo que da problemas
 						if(sacarNumero(colaSolicitudes[i].id)!=0){
 							id=sacarNumero(colaSolicitudes[i].id);
 							posicion=i;
@@ -410,8 +418,10 @@ void *accionesAtendedor(void *ptrs){
 					}
 				}
 			}
+			//Si no se ha encontrado nada se vuelve al pricipio con el tipo =2(PRO)
 			if(id==-1){
 				tipoEvaluacion=2;
+				//En las iteraciones pares se libera el mutex y se duerme
 				if(contador%2==0){
 					//printf("%d-Par: %d\n",*(int *)ptrs,id);
 					pthread_mutex_unlock(&mutexColaSolicitudes);
@@ -419,12 +429,13 @@ void *accionesAtendedor(void *ptrs){
 				}
 			}
 		}while(id==-1);
-		colaSolicitudes[posicion].atendido=1;
+		colaSolicitudes[posicion].atendido=1;//Se cambia el flag antes de liberar el mutex para evitar cambios en los datos
 		pthread_mutex_unlock(&mutexColaSolicitudes);
 		printf("Atendedor_%d: comienza a procesar la solicitud_%d\n",*(int *)ptrs,id);
 		sprintf(salida,"comienza a procesar la solicitud_%d",id);
 		writeLogMessage(atendedor,salida);
 		srand(time(NULL));
+		//se genera un numero aleatorio para saber el estado de atencion
 		calculo=rand()%10+1;
 		if(calculo<=7){
 			espera=rand()%4+1;
@@ -443,20 +454,20 @@ void *accionesAtendedor(void *ptrs){
 			espera=rand()%5+6;
 			apto=false;
 		}
-		sleep(espera);
+		sleep(espera);//Se espera en funcion de lo sucedido previamente
 		printf("Atendedor_%d: el tiempo necesario para atender la solicitud_%d ha sido %d\n",*(int *)ptrs,id,espera);
 		sprintf(salida,"el tiempo necesario para atender la solicitud_%d ha sido %d",id,espera);
 		writeLogMessage(atendedor,salida);
-	
+		//Se procede a cambiar el estado de la solicitud en caso de si tiene antecedentes o no
 		pthread_mutex_lock(&mutexColaSolicitudes);
-		if(apto==false){
+		if(apto==false){//Tiene antecedentes
 			colaSolicitudes[posicion].atendido=3;
-		} else{
+		} else{//No tiene antecedentes
 			colaSolicitudes[posicion].atendido=2;
 		}
 		pthread_mutex_unlock(&mutexColaSolicitudes);
 		
-		if(cafe%5==0){
+		if(cafe%5==0){//En las rondas multiplo de cinco se duerme para el cafe
 			printf("Atendedor_%d: procede a tomarse un cafe\n",*(int *)ptrs);
 			sprintf(salida,"procede a tomarse un cafe");
 			writeLogMessage(atendedor,salida);
@@ -562,7 +573,10 @@ int sacarNumero(char *id){
 	}
 	return numero;
 }
-
+/**
+ *@author Mario Alvarez
+ *Comprueba que no haya solicitudes sin procesar.  
+*/
 int salidaApta(){
 	int output=true,i;
 	pthread_mutex_lock(&mutexColaSolicitudes);
@@ -574,50 +588,37 @@ int salidaApta(){
 	pthread_mutex_unlock(&mutexColaSolicitudes);
 	return output;
 }
-
+/**
+ *@author Mario Alvarez
+ *Amplia la cola de solicitudes durante la ejecucion.  
+*/
 void manejadoraSolicitudMaxima(int signal){
 	char movimiento[5];
 	int numeroMovimientos, i;
-	printf("Para reformar la cola seleccione + ampliar - reducir e indique el numero:\n");
+	printf("Para reformar la cola seleccione una cantidad + a ampliar\n");
 	scanf("%s",movimiento);
 	numeroMovimientos=atoi(movimiento);
-	if(numeroMovimientos>0){
 		pthread_mutex_lock(&mutexColaSolicitudes);
+		//Se genera una cola auxiliar para guardar los datos
 		Solicitud *colaAux = (Solicitud*)malloc(sizeof(Solicitud)*tamCola);
 		for(i=0;i<tamCola;i++){
 			colaAux[i]=colaSolicitudes[i];
 		}
+		//Se desplazan los datos de un puntero a otro
 		colaSolicitudes = realloc(colaSolicitudes,sizeof(Solicitud)*(tamCola+numeroMovimientos));
 		for(i=0;i<tamCola;i++){
 			colaSolicitudes[i]=colaAux[i];
 		}
+		//Se inicializan las solicitudes nuevas
 		for(i=0;i<numeroMovimientos;i++){
 			inicializarSolicitud(&colaSolicitudes[tamCola + i]);
 		}
+		//Se amplia la cola
 		tamCola=+numeroMovimientos;
-		inicializarSolicitud(&colaSolicitudes[tamCola-1]);
+		free(colaAux);
 		pthread_mutex_unlock(&mutexColaSolicitudes);
 		printf("Cola de solicitudes ampliada\n");
 		writeLogMessage ( "Main" , "La cola de solicitudes ha sido ampliada");
-	}else{
-		if(numeroMovimientos>=tamCola){
-			printf("Para preservar la integridad del programa no se realizara esta accion\n");
-		}else{
-			pthread_mutex_lock(&mutexColaSolicitudes);
-			Solicitud *colaAux = (Solicitud*)malloc(sizeof(Solicitud)*tamCola);
-			for(i=0;i<tamCola;i++){
-				colaAux[i]=colaSolicitudes[i];
-			}
-			colaSolicitudes = realloc(colaSolicitudes,sizeof(Solicitud)*(tamCola+numeroMovimientos));
-			for(i=0;i<tamCola+numeroMovimientos;i++){
-				colaSolicitudes[i]=colaAux[i];
-			}
-			tamCola=+numeroMovimientos;
-			pthread_mutex_unlock(&mutexColaSolicitudes);
-			printf("Cola de solicitudes reducida\n");
-			writeLogMessage ( "Main" , "La cola de solicitudes ha sido reducida");
-		}
-	}
 }
 
 void manejadoraAtendedorMaxima(int signal){
