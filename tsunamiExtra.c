@@ -364,12 +364,12 @@ void *accionesSolicitud(void *structSolicitud){
 	}	
 }
 /**
- *@author Marcos Ferreras
+ *@author Mario Alvarez
  *Procesa las solicitudes. 
 */
 void *accionesAtendedor(void *ptrs){
 	//El atendedor 1 atiende solicitudes tipo 0, el 2 tipo 1 y el 3 todas las anteriores
-	//Eltipo de solicitudes viene decidido por el numero del atendedor en cuestion
+	//El tipo de solicitudes viene dado por el numero del atendedor en cuestion
 	int tipoEvaluacion,tipoEvaluacionEstatica, id, contador=0, calculo, espera, apto, posicion=0, cafe=0,i;
 	char atendedor[25], salida[150];
 	sprintf(atendedor,"Atendedor_%d",*(int *)ptrs);
@@ -500,7 +500,10 @@ void *accionesCoordinadorSocial(){
 		pthread_mutex_unlock(&mutexColaSocial);
 	}
 }
-
+/**
+*@author Marcos Ferreras
+*Esta función se encarga de realizar la actividad. Es continuación de accionesSolicitud
+*/
 void *usuarioEnActividad(void *id){
 	char idUser[50];
 	sprintf(id,"Usuario_%d", *(int *)id);
@@ -522,6 +525,9 @@ void *usuarioEnActividad(void *id){
 	pthread_mutex_unlock(&mutexColaSocial);
 	pthread_exit(NULL);
 }
+/**
+*Registra los mensajes e id en un fichero de log.
+*/
 void writeLogMessage (char *id , char *msg) {
 	int i;
 	pthread_mutex_lock(&mutexLog);
