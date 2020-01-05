@@ -257,53 +257,66 @@ void *accionesSolicitud(void *structSolicitud){
 	//Al salir de este bucle no he soltado el mutex. En este punto lo desbloqueo, y decido si me uno a una actividad social o no (Si puedo).
 	enAtencion=solicitud->atendido;
 	pthread_mutex_unlock(&mutexColaSolicitudes);
-	printf("Flag Atendido:%d",enAtencion);
-	if(enAtencion == 2){
-		participo=rand()%2;
-		//0->Si Participo 1->No Participo
-		if(participo==0){
-			//Libero hueco en solicitudes
-			printf("ID %s : El usuario ha decidido participar en una actividad cultural\n", solicitud->id);
-			writeLogMessage(solicitud->id,"El usuario ha decidido participar en una actividad cultural");
-			pthread_mutex_lock(&mutexColaSocial);
-			while(listaCerrada==true){
-				pthread_mutex_unlock(&mutexColaSocial);
-				printf("ID %s : La lista de actividades esta cerrada. Esperando...\n", solicitud->id);
-				writeLogMessage(solicitud->id,"La lista de actividades esta cerrada. Esperando...");
-				sleep(3);
+	pthread_mutex_lock(&salir);
+	if(!finPrograma){
+		if(enAtencion == 2){
+			participo=rand()%2;
+			//0->Si Participo 1->No Participo
+			if(participo==0){
+				//Libero hueco en solicitudes
+				printf("ID %s : El usuario ha decidido participar en una actividad cultural\n", solicitud->id);
+				writeLogMessage(solicitud->id,"El usuario ha decidido participar en una actividad cultural");
+				pthread_mutex_unlock(&salir);
 				pthread_mutex_lock(&mutexColaSocial);
+				while(listaCerrada==true){
+					pthread_mutex_unlock(&mutexColaSocial);
+					printf("ID %s : La lista de actividades esta cerrada. Esperando...\n", solicitud->id);
+					writeLogMessage(solicitud->id,"La lista de actividades esta cerrada. Esperando...");
+					sleep(3);
+					pthread_mutex_lock(&mutexColaSocial);
+				}
+				//Copio el id del usuario a la actividad
+				idUsuariosActividad[contadorActividadesCola]= sacarNumero(id);
+				//Incremento el numero de actividades
+				contadorActividadesCola++;
+				if(contadorActividadesCola==4){
+					//Aviso al coordinador que soy el ultimo
+					printf("ID %s : Soy el ultimo para la actividad. Voy a avisar al coordinador\n", solicitud->id);
+					writeLogMessage(solicitud->id,"Soy el ultimo para la actividad. Voy a avisar al coordinador");
+					listaCerrada = true;
+					pthread_cond_signal(&condActividades);
+				}
+				pthread_mutex_unlock(&mutexColaSocial);
+				//Libero espacio en la cola
+				pthread_mutex_lock(&mutexColaSolicitudes);
+				inicializarSolicitud(solicitud);
+				pthread_mutex_unlock(&mutexColaSolicitudes);
+				pthread_exit(NULL);
+				
+			} else {
+				pthread_mutex_unlock(&salir);
+				printf("ID %s : El usuario ha decidido NO participar en una actividad cultural\n", solicitud->id);
+				writeLogMessage(solicitud->id,"El usuario ha decidido NO participar en una actividad cultural");
+				//Libero espacio en cola de solicitudes
+				pthread_mutex_lock(&mutexColaSolicitudes);
+				inicializarSolicitud(solicitud);
+				pthread_mutex_unlock(&mutexColaSolicitudes);
+				pthread_exit(NULL);
 			}
-			//Copio el id del usuario a la actividad
-			idUsuariosActividad[contadorActividadesCola]= sacarNumero(id);
-			//Incremento el numero de actividades
-			contadorActividadesCola++;
-			if(contadorActividadesCola==4){
-				//Aviso al coordinador que soy el ultimo
-				printf("ID %s : Soy el ultimo para la actividad. Voy a avisar al coordinador\n", solicitud->id);
-				writeLogMessage(solicitud->id,"Soy el ultimo para la actividad. Voy a avisar al coordinador");
-				listaCerrada = true;
-				pthread_cond_signal(&condActividades);
-			}
-			pthread_mutex_unlock(&mutexColaSocial);
-			//Libero espacio en la cola
+		} else if(enAtencion==3){
+			pthread_mutex_unlock(&salir);
+			//Solicitud con antecedentes. Libero el hueco en la cola y finalizo hilo.
+			printf("ID %s : El usuario tiene antecedentes y no se puede unir a ninguna actividad\n", solicitud->id);
+			writeLogMessage(solicitud->id,"El usuario tiene antecedentes y no se puede unir a ninguna actividad");
 			pthread_mutex_lock(&mutexColaSolicitudes);
 			inicializarSolicitud(solicitud);
 			pthread_mutex_unlock(&mutexColaSolicitudes);
 			pthread_exit(NULL);
-			
-		} else {
-			printf("ID %s : El usuario ha decidido NO participar en una actividad cultural\n", solicitud->id);
-			writeLogMessage(solicitud->id,"El usuario ha decidido NO participar en una actividad cultural");
-			//Libero espacio en cola de solicitudes
-			pthread_mutex_lock(&mutexColaSolicitudes);
-			inicializarSolicitud(solicitud);
-			pthread_mutex_unlock(&mutexColaSolicitudes);
 		}
-		pthread_exit(NULL);
-	} else if(enAtencion==3){
-		//Solicitud con antecedentes. Libero el hueco en la cola y finalizo hilo.
-		printf("ID %s : El usuario tiene antecedentes y no se puede unir a ninguna actividad\n", solicitud->id);
-		writeLogMessage(solicitud->id,"El usuario tiene antecedentes y no se puede unir a ninguna actividad");
+	} else {
+		pthread_mutex_unlock(&salir);
+		printf("ID %s : Se ha recibido la señal de finalizar y no se puede unir a ninguna actividad\n", solicitud->id);
+		writeLogMessage(solicitud->id,"Se ha recibido la señal de finalizar y no se puede unir a ninguna actividad");
 		pthread_mutex_lock(&mutexColaSolicitudes);
 		inicializarSolicitud(solicitud);
 		pthread_mutex_unlock(&mutexColaSolicitudes);
