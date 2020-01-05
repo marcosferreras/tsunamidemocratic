@@ -476,6 +476,11 @@ void *accionesAtendedor(void *ptrs){
 		
 	}while(true);
 }
+
+/**
+ *@author Sergio Perez
+ * Se encarga de cerrar la lista, avisar a usuarioEnActividad para que comience la actividad y volver a abrir la lista
+*/
 void *accionesCoordinadorSocial(){
 	pthread_t usuario1, usuario2, usuario3, usuario4;
 	while(true){
@@ -627,6 +632,11 @@ void manejadoraSolicitudMaxima(int signal){
 		writeLogMessage ( "Main" , "La cola de solicitudes ha sido ampliada");
 }
 
+/**
+ *@author Sergio Perez
+ *Amplia el numero de atendedores durante la ejecucion.  
+*/
+
 void manejadoraAtendedorMaxima(int signal){
 	int tipo, numero, i;
 	pthread_t atendedorPROampliar;
@@ -646,7 +656,7 @@ void manejadoraAtendedorMaxima(int signal){
 
 		for(i = 0; i < numero; i++){
 			pthread_create(&atendedorPROampliar, NULL, accionesAtendedor, (void *) &tipoAtendedor[2]);
-			//sprintf(buffer,"Atendedor_%d ha sido creado\n",atendedoresPROampliar[i]);
+			sprintf(buffer,"Atendedor_%d ha sido creado\n",atendedoresPROampliar[i]);
 			writeLogMessage ( "1" , buffer);
 			printf("Atendedor_%d ha sido creado\n",atendedoresPROampliar[i]);
 		}
