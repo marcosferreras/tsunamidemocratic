@@ -436,9 +436,13 @@ void *accionesCoordinadorSocial(){
 	}
 }
 
+/**
+*@author Marcos Ferreras
+*Esta función se encarga de realizar la actividad. Es continuación de accionesSolicitud
+*/
 void *usuarioEnActividad(void *id){
 	char idUser[50];
-	sprintf(id,"Usuario_%d", *(int *)id);
+	sprintf(idUser,"Usuario_%d", *(int *)id);
 	printf("Usuario_%d -> Se ha unido a una actividad cultural\n", *(int *)id);
 	writeLogMessage(idUser, "Se ha unido a una actividad cultural");
 
@@ -449,11 +453,11 @@ void *usuarioEnActividad(void *id){
 	contadorActividadesCola--;
 	if(contadorActividadesCola==0){
 		printf("Usuario_%d -> Soy el último en finalizar la actividad. Voy a avisar al coordinador\n", *(int *)id);
-		writeLogMessage(id,"Soy el último en finalizar la actividad. Voy a avisar al coordinador");
+		writeLogMessage(idUser,"Soy el último en finalizar la actividad. Voy a avisar al coordinador");
 		pthread_cond_signal(&condActividades);
 	}
 	printf("Usuario_%d -> Ha finalizado la actividad cultural\n", *(int *)id);
-	writeLogMessage(id, "Ha finalizado la actividad cultural");
+	writeLogMessage(idUser, "Ha finalizado la actividad cultural");
 	pthread_mutex_unlock(&mutexColaSocial);
 	pthread_exit(NULL);
 }
