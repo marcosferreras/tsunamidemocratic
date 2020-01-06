@@ -137,9 +137,10 @@ int main(int argc, char **argv){
  * @autor Diego Narciandi
 */
 void creadorAtendedoresPRO(int tipoAtendedor[]){
-	int i = 0,tipo;
+	int i = 0;
 	char buffer[100];
 	int atendedoresPRO[numAtendedoresPRO];
+	printf("numAtendedoresPROABAJO: %d\n", numAtendedoresPRO);
 	//Inicializo el vector de atendedoresPRO con sus IDs
 	for(i = 0 ; i < numAtendedoresPRO ; i++){
 		//Empiezo en 3 ya que el atendedor 1 y 2 ya han sido creados
@@ -147,12 +148,13 @@ void creadorAtendedoresPRO(int tipoAtendedor[]){
 	}
 	pthread_t atendedorPRO;
 	for(i = 0 ; i < numAtendedoresPRO ; i++){
-		pthread_create(&atendedorPRO, NULL, accionesAtendedor, (void *) &atendedoresPRO[i]);
+		printf("iABAJO: %d\n", i);
+		printf("AtendedoresPRO[%d]: %d\n",i,atendedoresPRO[i]);
+		pthread_create(&atendedorPRO, NULL, accionesAtendedor, (void *) &tipoAtendedor[2]);
 		sprintf(buffer,"Atendedor_%d ha sido creado\n",atendedoresPRO[i]);
 		writeLogMessage ( "1" , buffer);
 		printf("Atendedor_%d ha sido creado\n",atendedoresPRO[i]);
 	}
-	sleep(1);
 }
 
 void nuevaSolicitud(int signal){
@@ -167,17 +169,23 @@ void nuevaSolicitud(int signal){
 	int guardado = false;
 	//Variable para el numero de solicitud
 	int valorId = 0;
+	//Contador
+	int contador = 0;
 	//Cola de solicitudes aun abierta
 	if(finPrograma == false){
 	//Seccion Critica
 		pthread_mutex_lock(&mutexColaSolicitudes);
 		//Compruebo el espacio en la lista de solicitudes
+		printf("TamCOla: %d\n", tamCola);
+/*
 		while((i < tamCola) && (guardado == false)){
 			//Si el hueco de la solicitud esta libre, entro
 			if(strcmp(colaSolicitudes[i].id,"0")==0){
 				solicitud = &colaSolicitudes[i];
 				//Introduzco el identificador con su valor y lo incremento
+				printf("CONTADORsolicitudes: %d\n", contadorSolicitudes);
 				contadorSolicitudes++;
+				printf("CONTADORsolicitudes: %d\n", contadorSolicitudes);
 				//Guardo el valor en un char para introducirlo en id
 				valorId = contadorSolicitudes;
 				//Invitacion
@@ -192,6 +200,23 @@ void nuevaSolicitud(int signal){
 			//Posicion ya ocupada
 			}	
 		i++;
+		}
+*/
+		for(i = 0; i < tamCola; i++){
+
+			if(strcmp(colaSolicitudes[i].id,"0")==0){
+				solicitud = &colaSolicitudes[i];
+				contador++;
+				valorId = contador;
+				if(signal == SIGUSR1){
+					solicitud->tipo = 0;
+				//QR
+				}else{
+					solicitud->tipo = 1;
+				}
+				guardado = true;
+				break;
+			}
 		}
 	//Fin de la seccion critica
 		pthread_mutex_unlock(&mutexColaSolicitudes);
@@ -312,66 +337,53 @@ void *accionesSolicitud(void *structSolicitud){
 	//Al salir de este bucle no he soltado el mutex. En este punto lo desbloqueo, y decido si me uno a una actividad social o no (Si puedo).
 	enAtencion=solicitud->atendido;
 	pthread_mutex_unlock(&mutexColaSolicitudes);
-	pthread_mutex_lock(&salir);
-	if(!finPrograma){
-		if(enAtencion == 2){
-			participo=rand()%2;
-			//0->Si Participo 1->No Participo
-			if(participo==0){
-				//Libero hueco en solicitudes
-				printf("ID %s : El usuario ha decidido participar en una actividad cultural\n", solicitud->id);
-				writeLogMessage(solicitud->id,"El usuario ha decidido participar en una actividad cultural");
-				pthread_mutex_unlock(&salir);
-				pthread_mutex_lock(&mutexColaSocial);
-				while(listaCerrada==true){
-					pthread_mutex_unlock(&mutexColaSocial);
-					printf("ID %s : La lista de actividades esta cerrada. Esperando...\n", solicitud->id);
-					writeLogMessage(solicitud->id,"La lista de actividades esta cerrada. Esperando...");
-					sleep(3);
-					pthread_mutex_lock(&mutexColaSocial);
-				}
-				//Copio el id del usuario a la actividad
-				idUsuariosActividad[contadorActividadesCola]= sacarNumero(id);
-				//Incremento el numero de actividades
-				contadorActividadesCola++;
-				if(contadorActividadesCola==4){
-					//Aviso al coordinador que soy el ultimo
-					printf("ID %s : Soy el ultimo para la actividad. Voy a avisar al coordinador\n", solicitud->id);
-					writeLogMessage(solicitud->id,"Soy el ultimo para la actividad. Voy a avisar al coordinador");
-					listaCerrada = true;
-					pthread_cond_signal(&condActividades);
-				}
+	if(enAtencion == 2){
+		participo=rand()%2;
+		//0->Si Participo 1->No Participo
+		if(participo==0){
+			//Libero hueco en solicitudes
+			printf("ID %s : El usuario ha decidido participar en una actividad cultural\n", solicitud->id);
+			writeLogMessage(solicitud->id,"El usuario ha decidido participar en una actividad cultural");
+			pthread_mutex_lock(&mutexColaSocial);
+			while(listaCerrada==true){
 				pthread_mutex_unlock(&mutexColaSocial);
-				//Libero espacio en la cola
-				pthread_mutex_lock(&mutexColaSolicitudes);
-				inicializarSolicitud(solicitud);
-				pthread_mutex_unlock(&mutexColaSolicitudes);
-				pthread_exit(NULL);
-				
-			} else {
-				pthread_mutex_unlock(&salir);
-				printf("ID %s : El usuario ha decidido NO participar en una actividad cultural\n", solicitud->id);
-				writeLogMessage(solicitud->id,"El usuario ha decidido NO participar en una actividad cultural");
-				//Libero espacio en cola de solicitudes
-				pthread_mutex_lock(&mutexColaSolicitudes);
-				inicializarSolicitud(solicitud);
-				pthread_mutex_unlock(&mutexColaSolicitudes);
-				pthread_exit(NULL);
+				printf("ID %s : La lista de actividades esta cerrada. Esperando...\n", solicitud->id);
+				writeLogMessage(solicitud->id,"La lista de actividades esta cerrada. Esperando...");
+				sleep(3);
+				pthread_mutex_lock(&mutexColaSocial);
 			}
-		} else if(enAtencion==3){
-			pthread_mutex_unlock(&salir);
-			//Solicitud con antecedentes. Libero el hueco en la cola y finalizo hilo.
-			printf("ID %s : El usuario tiene antecedentes y no se puede unir a ninguna actividad\n", solicitud->id);
-			writeLogMessage(solicitud->id,"El usuario tiene antecedentes y no se puede unir a ninguna actividad");
+			//Copio el id del usuario a la actividad
+			idUsuariosActividad[contadorActividadesCola]= sacarNumero(id);
+			printf("SacarID: %d\n",sacarNumero(id));
+			//Incremento el numero de actividades
+			contadorActividadesCola++;
+			if(contadorActividadesCola==4){
+				//Aviso al coordinador que soy el ultimo
+				printf("ID %s : Soy el ultimo para la actividad. Voy a avisar al coordinador\n", solicitud->id);
+				writeLogMessage(solicitud->id,"Soy el ultimo para la actividad. Voy a avisar al coordinador");
+				listaCerrada = true;
+				pthread_cond_signal(&condActividades);
+			}
+			pthread_mutex_unlock(&mutexColaSocial);
+			//Libero espacio en la cola
 			pthread_mutex_lock(&mutexColaSolicitudes);
 			inicializarSolicitud(solicitud);
 			pthread_mutex_unlock(&mutexColaSolicitudes);
 			pthread_exit(NULL);
+			
+		} else {
+			printf("ID %s : El usuario ha decidido NO participar en una actividad cultural\n", solicitud->id);
+			writeLogMessage(solicitud->id,"El usuario ha decidido NO participar en una actividad cultural");
+			//Libero espacio en cola de solicitudes
+			pthread_mutex_lock(&mutexColaSolicitudes);
+			inicializarSolicitud(solicitud);
+			pthread_mutex_unlock(&mutexColaSolicitudes);
 		}
-	} else {
-		pthread_mutex_unlock(&salir);
-		printf("ID %s : Se ha recibido la señal de finalizar y no se puede unir a ninguna actividad\n", solicitud->id);
-		writeLogMessage(solicitud->id,"Se ha recibido la señal de finalizar y no se puede unir a ninguna actividad");
+		pthread_exit(NULL);
+	} else if(enAtencion==3){
+		//Solicitud con antecedentes. Libero el hueco en la cola y finalizo hilo.
+		printf("ID %s : El usuario tiene antecedentes y no se puede unir a ninguna actividad\n", solicitud->id);
+		writeLogMessage(solicitud->id,"El usuario tiene antecedentes y no se puede unir a ninguna actividad");
 		pthread_mutex_lock(&mutexColaSolicitudes);
 		inicializarSolicitud(solicitud);
 		pthread_mutex_unlock(&mutexColaSolicitudes);
@@ -379,16 +391,15 @@ void *accionesSolicitud(void *structSolicitud){
 	}	
 }
 /**
- *@author Mario Alvarez
+ *@author Marcos Ferreras
  *Procesa las solicitudes. 
 */
 void *accionesAtendedor(void *ptrs){
 	//El atendedor 1 atiende solicitudes tipo 0, el 2 tipo 1 y el 3 todas las anteriores
-	//El tipo de solicitudes viene dado por el numero del atendedor en cuestion
-	int tipoEvaluacion,tipoEvaluacionEstatica, id, contador=0, calculo, espera, apto, posicion=0, cafe=0,i,numero=*(int *)ptrs;
+	//Eltipo de solicitudes viene decidido por el numero del atendedor en cuestion
+	int tipoEvaluacion,tipoEvaluacionEstatica, id, contador=0, calculo, espera, apto, posicion=0, cafe=0,i;
 	char atendedor[25], salida[150];
-	printf("Atendedor_%d\n",numero);
-	sprintf(atendedor,"Atendedor_%d",numero);
+	sprintf(atendedor,"Atendedor_%d",*(int *)ptrs);
 	tipoEvaluacionEstatica=*(int *)ptrs-1;
 	do{
 		//Se ponen todos los valores a cero antes de cada iteracion
@@ -401,10 +412,12 @@ void *accionesAtendedor(void *ptrs){
 			if(finPrograma) {
 				pthread_mutex_unlock(&mutexColaSolicitudes);
 				if(salidaApta()){
-						printf("Atendedor_%d: la cola de solicitudes esta vacia y se procede a la finalizacion del programa\n",numero);
+						printf("Atendedor_%d: la cola de solicitudes esta vacia y se procede a la finalizacion del programa\n",*(int *)ptrs);
 						sprintf(salida,"la cola de solicitudes esta vacia y se procede a la finalizacion del programa");
 						writeLogMessage(atendedor,salida);
-						free(colaSolicitudes);
+					
+						pthread_mutex_unlock(&salir);
+						
 						exit(0);//Se sale del programa
 				}
 				pthread_mutex_unlock(&mutexColaSolicitudes);
@@ -412,9 +425,6 @@ void *accionesAtendedor(void *ptrs){
 			pthread_mutex_unlock(&salir);
 			//Se vigilan las iteraciones pares ya que en ellas se reinicia el tipo de evaluacion 
 			if(contador%2==0 || contador==0){
-					if(tipoEvaluacionEstatica>2){
-						tipoEvaluacionEstatica=2;
-					}
 					tipoEvaluacion=tipoEvaluacionEstatica;
 					pthread_mutex_lock(&mutexColaSolicitudes);
 			}
@@ -422,8 +432,8 @@ void *accionesAtendedor(void *ptrs){
 			contador++;
 			id=-1;
 			for(i=0;i<tamCola;i++){
-				//Se evalua tambien en >=2 para esos atendedores pro que se añadieron de mas
-				if((colaSolicitudes[i].tipo==tipoEvaluacion || tipoEvaluacion==2) && colaSolicitudes[i].atendido==0){
+				//Se evalua tambien en >2 para esos atendedores pro que se añadieron de mas
+				if((colaSolicitudes[i].tipo==tipoEvaluacion || tipoEvaluacion>=2) && colaSolicitudes[i].atendido==0){
 					//El valor por defecto del id es-1 y por eso se valora a parte
 					//Se seleccionara siempre la id mas baja ya que en teoria es la que mas tiempo lleva esperando
 					if((id>sacarNumero(colaSolicitudes[i].id) || id==-1)){
@@ -448,7 +458,7 @@ void *accionesAtendedor(void *ptrs){
 		}while(id==-1);
 		colaSolicitudes[posicion].atendido=1;//Se cambia el flag antes de liberar el mutex para evitar cambios en los datos
 		pthread_mutex_unlock(&mutexColaSolicitudes);
-		printf("Atendedor_%d: comienza a procesar la solicitud_%d\n",numero,id);
+		printf("Atendedor_%d: comienza a procesar la solicitud_%d\n",*(int *)ptrs,id);
 		sprintf(salida,"comienza a procesar la solicitud_%d",id);
 		writeLogMessage(atendedor,salida);
 		srand(time(NULL));
@@ -456,23 +466,23 @@ void *accionesAtendedor(void *ptrs){
 		calculo=rand()%10+1;
 		if(calculo<=7){
 			espera=rand()%4+1;
-			printf("Atendedor_%d: todo correcto al procesar la solicitud_%d\n",numero,id);
+			printf("Atendedor_%d: todo correcto al procesar la solicitud_%d\n",*(int *)ptrs,id);
 			sprintf(salida,"todo correcto al procesar la solicitud_%d",id);
 			writeLogMessage(atendedor,salida);
 		}else if(calculo<=9){
 			espera=rand()%5+2;
-			printf("Atendedor_%d: existe un error en los datos de la solicitud_%d\n",numero,id);
+			printf("Atendedor_%d: existe un error en los datos de la solicitud_%d\n",*(int *)ptrs,id);
 			sprintf(salida,"existe un error en los datos de la solicitud_%d",id);
 			writeLogMessage(atendedor,salida);
 		}else{
-			printf("Atendedor_%d: el usuario de solicitud_%d posee antecedentes\n",numero,id);
+			printf("Atendedor_%d: el usuario de solicitud_%d posee antecedentes\n",*(int *)ptrs,id);
 			sprintf(salida,"el usuario de solicitud_%d posee antecedentes",id);
 			writeLogMessage(atendedor,salida);
 			espera=rand()%5+6;
 			apto=false;
 		}
 		sleep(espera);//Se espera en funcion de lo sucedido previamente
-		printf("Atendedor_%d: el tiempo necesario para atender la solicitud_%d ha sido %d\n",numero,id,espera);
+		printf("Atendedor_%d: el tiempo necesario para atender la solicitud_%d ha sido %d\n",*(int *)ptrs,id,espera);
 		sprintf(salida,"el tiempo necesario para atender la solicitud_%d ha sido %d",id,espera);
 		writeLogMessage(atendedor,salida);
 		//Se procede a cambiar el estado de la solicitud en caso de si tiene antecedentes o no
@@ -485,7 +495,7 @@ void *accionesAtendedor(void *ptrs){
 		pthread_mutex_unlock(&mutexColaSolicitudes);
 		
 		if(cafe%5==0){//En las rondas multiplo de cinco se duerme para el cafe
-			printf("Atendedor_%d: procede a tomarse un cafe\n",numero);
+			printf("Atendedor_%d: procede a tomarse un cafe\n",*(int *)ptrs);
 			sprintf(salida,"procede a tomarse un cafe");
 			writeLogMessage(atendedor,salida);
 			sleep(10);
@@ -493,11 +503,6 @@ void *accionesAtendedor(void *ptrs){
 		
 	}while(true);
 }
-
-/**
- *@author Sergio Perez
- * Se encarga de cerrar la lista, avisar a usuarioEnActividad para que comience la actividad y volver a abrir la lista
-*/
 void *accionesCoordinadorSocial(){
 	pthread_t usuario1, usuario2, usuario3, usuario4;
 	while(true){
@@ -522,13 +527,10 @@ void *accionesCoordinadorSocial(){
 		pthread_mutex_unlock(&mutexColaSocial);
 	}
 }
-/**
-*@author Marcos Ferreras
-*Esta función se encarga de realizar la actividad. Es continuación de accionesSolicitud
-*/
+
 void *usuarioEnActividad(void *id){
 	char idUser[50];
-	sprintf(idUser,"Usuario_%d", *(int *)id);
+	sprintf(id,"Usuario_%d", *(int *)id);
 	printf("Usuario_%d -> Se ha unido a una actividad cultural\n", *(int *)id);
 	writeLogMessage(idUser, "Se ha unido a una actividad cultural");
 
@@ -539,17 +541,14 @@ void *usuarioEnActividad(void *id){
 	contadorActividadesCola--;
 	if(contadorActividadesCola==0){
 		printf("Usuario_%d -> Soy el último en finalizar la actividad. Voy a avisar al coordinador\n", *(int *)id);
-		writeLogMessage(idUser,"Soy el último en finalizar la actividad. Voy a avisar al coordinador");
+		writeLogMessage(id,"Soy el último en finalizar la actividad. Voy a avisar al coordinador");
 		pthread_cond_signal(&condActividades);
 	}
 	printf("Usuario_%d -> Ha finalizado la actividad cultural\n", *(int *)id);
-	writeLogMessage(idUser, "Ha finalizado la actividad cultural");
+	writeLogMessage(id, "Ha finalizado la actividad cultural");
 	pthread_mutex_unlock(&mutexColaSocial);
 	pthread_exit(NULL);
 }
-/**
-*Registra los mensajes e id en un fichero de log.
-*/
 void writeLogMessage (char *id , char *msg) {
 	int i;
 	pthread_mutex_lock(&mutexLog);
@@ -610,10 +609,10 @@ int salidaApta(){
 	pthread_mutex_lock(&mutexColaSolicitudes);
 	for(i=0;i<tamCola;i++){
 		if(strcmp(colaSolicitudes[i].id,"0")!=0){
-			printf("False en: %d", i);
 			output=false;
 		}
 	}
+	pthread_mutex_unlock(&mutexColaSolicitudes);
 	return output;
 }
 /**
@@ -649,11 +648,6 @@ void manejadoraSolicitudMaxima(int signal){
 		writeLogMessage ( "Main" , "La cola de solicitudes ha sido ampliada");
 }
 
-/**
- *@author Sergio Perez
- *Amplia el numero de atendedores durante la ejecucion.  
-*/
-
 void manejadoraAtendedorMaxima(int signal){
 	int tipo, numero, i;
 	pthread_t atendedorPROampliar;
@@ -673,7 +667,7 @@ void manejadoraAtendedorMaxima(int signal){
 
 		for(i = 0; i < numero; i++){
 			pthread_create(&atendedorPROampliar, NULL, accionesAtendedor, (void *) &tipoAtendedor[2]);
-			sprintf(buffer,"Atendedor_%d ha sido creado\n",atendedoresPROampliar[i]);
+			//sprintf(buffer,"Atendedor_%d ha sido creado\n",atendedoresPROampliar[i]);
 			writeLogMessage ( "1" , buffer);
 			printf("Atendedor_%d ha sido creado\n",atendedoresPROampliar[i]);
 		}
