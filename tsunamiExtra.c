@@ -379,7 +379,7 @@ void *accionesSolicitud(void *structSolicitud){
 			inicializarSolicitud(solicitud);
 			pthread_mutex_unlock(&mutexColaSolicitudes);
 			pthread_exit(NULL);
-		}
+		} 
 	} else {
 		pthread_mutex_unlock(&salir);
 		printf("ID %s : Se ha recibido la señal de finalizar y no se puede unir a ninguna actividad\n", solicitud->id);
@@ -409,9 +409,9 @@ void *accionesAtendedor(void *ptrs){
 		cafe++;
 		do{
 			//Se comprueba si la cola esta cerrada y si lo esta se comprueba que haya usuarios remanentes para saber si puede finalizarse la aplicacion
+			pthread_mutex_unlock(&mutexColaSolicitudes);
 			pthread_mutex_lock(&salir);
 			if(finPrograma) {
-				pthread_mutex_unlock(&mutexColaSolicitudes);
 				if(salidaApta()){
 						printf("Atendedor_%d: la cola de solicitudes esta vacia y se procede a la finalizacion del programa\n",numero);
 						sprintf(salida,"la cola de solicitudes esta vacia y se procede a la finalizacion del programa");
