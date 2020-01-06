@@ -675,12 +675,12 @@ void manejadoraAtendedorMaxima(int signal){
 	if(numero>0){
 		
 		//Inicializo el vector de atendedoresPRO con sus IDs
-		for(i = 0; i < numero; i++){
-			idAtendedores[i] = i + numAtendedoresPRO + 3;
-			hiloAtendedores[i] = i + numAtendedoresPRO + 3;
+		for(i = numAtendedoresPRO; i < numero+numAtendedoresPRO; i++){
+			idAtendedores[i] = i + 3;
+			hiloAtendedores[i] = i + 3;
 		}
 
-		for(i = 0; i < numero; i++){
+		for(i = numAtendedoresPRO; i < numero+numAtendedoresPRO; i++){
 			pthread_create(&hiloAtendedores[i], NULL, accionesAtendedor, (void *) &idAtendedores[i]);
 			sprintf(buffer,"Atendedor_%d ha sido creado\n",idAtendedores[i]);
 			writeLogMessage ( "1" , buffer);
