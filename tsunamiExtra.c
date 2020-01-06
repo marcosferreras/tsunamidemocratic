@@ -137,7 +137,7 @@ int main(int argc, char **argv){
  * @autor Diego Narciandi
 */
 void creadorAtendedoresPRO(int tipoAtendedor[]){
-	int i = 0;
+	int i = 0,tipo;
 	char buffer[100];
 	int atendedoresPRO[numAtendedoresPRO];
 	//Inicializo el vector de atendedoresPRO con sus IDs
@@ -147,11 +147,12 @@ void creadorAtendedoresPRO(int tipoAtendedor[]){
 	}
 	pthread_t atendedorPRO;
 	for(i = 0 ; i < numAtendedoresPRO ; i++){
-		pthread_create(&atendedorPRO, NULL, accionesAtendedor, (void *) &tipoAtendedor[2]);
+		pthread_create(&atendedorPRO, NULL, accionesAtendedor, (void *) &atendedoresPRO[i]);
 		sprintf(buffer,"Atendedor_%d ha sido creado\n",atendedoresPRO[i]);
 		writeLogMessage ( "1" , buffer);
 		printf("Atendedor_%d ha sido creado\n",atendedoresPRO[i]);
 	}
+	sleep(1);
 }
 
 void nuevaSolicitud(int signal){
@@ -384,9 +385,10 @@ void *accionesSolicitud(void *structSolicitud){
 void *accionesAtendedor(void *ptrs){
 	//El atendedor 1 atiende solicitudes tipo 0, el 2 tipo 1 y el 3 todas las anteriores
 	//El tipo de solicitudes viene dado por el numero del atendedor en cuestion
-	int tipoEvaluacion,tipoEvaluacionEstatica, id, contador=0, calculo, espera, apto, posicion=0, cafe=0,i;
+	int tipoEvaluacion,tipoEvaluacionEstatica, id, contador=0, calculo, espera, apto, posicion=0, cafe=0,i,numero=*(int *)ptrs;
 	char atendedor[25], salida[150];
-	sprintf(atendedor,"Atendedor_%d",*(int *)ptrs);
+	printf("Atendedor_%d\n",numero);
+	sprintf(atendedor,"Atendedor_%d",numero);
 	tipoEvaluacionEstatica=*(int *)ptrs-1;
 	do{
 		//Se ponen todos los valores a cero antes de cada iteracion
@@ -399,12 +401,10 @@ void *accionesAtendedor(void *ptrs){
 			if(finPrograma) {
 				pthread_mutex_unlock(&mutexColaSolicitudes);
 				if(salidaApta()){
-						printf("Atendedor_%d: la cola de solicitudes esta vacia y se procede a la finalizacion del programa\n",*(int *)ptrs);
+						printf("Atendedor_%d: la cola de solicitudes esta vacia y se procede a la finalizacion del programa\n",numero);
 						sprintf(salida,"la cola de solicitudes esta vacia y se procede a la finalizacion del programa");
 						writeLogMessage(atendedor,salida);
-					
-						pthread_mutex_unlock(&salir);
-						
+						free(colaSolicitudes);
 						exit(0);//Se sale del programa
 				}
 				pthread_mutex_unlock(&mutexColaSolicitudes);
@@ -412,6 +412,9 @@ void *accionesAtendedor(void *ptrs){
 			pthread_mutex_unlock(&salir);
 			//Se vigilan las iteraciones pares ya que en ellas se reinicia el tipo de evaluacion 
 			if(contador%2==0 || contador==0){
+					if(tipoEvaluacionEstatica>2){
+						tipoEvaluacionEstatica=2;
+					}
 					tipoEvaluacion=tipoEvaluacionEstatica;
 					pthread_mutex_lock(&mutexColaSolicitudes);
 			}
@@ -419,8 +422,8 @@ void *accionesAtendedor(void *ptrs){
 			contador++;
 			id=-1;
 			for(i=0;i<tamCola;i++){
-				//Se evalua tambien en >2 para esos atendedores pro que se añadieron de mas
-				if((colaSolicitudes[i].tipo==tipoEvaluacion || tipoEvaluacion>=2) && colaSolicitudes[i].atendido==0){
+				//Se evalua tambien en >=2 para esos atendedores pro que se añadieron de mas
+				if((colaSolicitudes[i].tipo==tipoEvaluacion || tipoEvaluacion==2) && colaSolicitudes[i].atendido==0){
 					//El valor por defecto del id es-1 y por eso se valora a parte
 					//Se seleccionara siempre la id mas baja ya que en teoria es la que mas tiempo lleva esperando
 					if((id>sacarNumero(colaSolicitudes[i].id) || id==-1)){
@@ -445,7 +448,7 @@ void *accionesAtendedor(void *ptrs){
 		}while(id==-1);
 		colaSolicitudes[posicion].atendido=1;//Se cambia el flag antes de liberar el mutex para evitar cambios en los datos
 		pthread_mutex_unlock(&mutexColaSolicitudes);
-		printf("Atendedor_%d: comienza a procesar la solicitud_%d\n",*(int *)ptrs,id);
+		printf("Atendedor_%d: comienza a procesar la solicitud_%d\n",numero,id);
 		sprintf(salida,"comienza a procesar la solicitud_%d",id);
 		writeLogMessage(atendedor,salida);
 		srand(time(NULL));
@@ -453,23 +456,23 @@ void *accionesAtendedor(void *ptrs){
 		calculo=rand()%10+1;
 		if(calculo<=7){
 			espera=rand()%4+1;
-			printf("Atendedor_%d: todo correcto al procesar la solicitud_%d\n",*(int *)ptrs,id);
+			printf("Atendedor_%d: todo correcto al procesar la solicitud_%d\n",numero,id);
 			sprintf(salida,"todo correcto al procesar la solicitud_%d",id);
 			writeLogMessage(atendedor,salida);
 		}else if(calculo<=9){
 			espera=rand()%5+2;
-			printf("Atendedor_%d: existe un error en los datos de la solicitud_%d\n",*(int *)ptrs,id);
+			printf("Atendedor_%d: existe un error en los datos de la solicitud_%d\n",numero,id);
 			sprintf(salida,"existe un error en los datos de la solicitud_%d",id);
 			writeLogMessage(atendedor,salida);
 		}else{
-			printf("Atendedor_%d: el usuario de solicitud_%d posee antecedentes\n",*(int *)ptrs,id);
+			printf("Atendedor_%d: el usuario de solicitud_%d posee antecedentes\n",numero,id);
 			sprintf(salida,"el usuario de solicitud_%d posee antecedentes",id);
 			writeLogMessage(atendedor,salida);
 			espera=rand()%5+6;
 			apto=false;
 		}
 		sleep(espera);//Se espera en funcion de lo sucedido previamente
-		printf("Atendedor_%d: el tiempo necesario para atender la solicitud_%d ha sido %d\n",*(int *)ptrs,id,espera);
+		printf("Atendedor_%d: el tiempo necesario para atender la solicitud_%d ha sido %d\n",numero,id,espera);
 		sprintf(salida,"el tiempo necesario para atender la solicitud_%d ha sido %d",id,espera);
 		writeLogMessage(atendedor,salida);
 		//Se procede a cambiar el estado de la solicitud en caso de si tiene antecedentes o no
@@ -482,7 +485,7 @@ void *accionesAtendedor(void *ptrs){
 		pthread_mutex_unlock(&mutexColaSolicitudes);
 		
 		if(cafe%5==0){//En las rondas multiplo de cinco se duerme para el cafe
-			printf("Atendedor_%d: procede a tomarse un cafe\n",*(int *)ptrs);
+			printf("Atendedor_%d: procede a tomarse un cafe\n",numero);
 			sprintf(salida,"procede a tomarse un cafe");
 			writeLogMessage(atendedor,salida);
 			sleep(10);
@@ -611,7 +614,6 @@ int salidaApta(){
 			output=false;
 		}
 	}
-	pthread_mutex_unlock(&mutexColaSolicitudes);
 	return output;
 }
 /**
