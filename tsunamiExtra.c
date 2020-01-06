@@ -22,6 +22,7 @@ void manejadoraFinalizar(int signal);
 void manejadoraSolicitudMaxima(int signal);
 void manejadoraAtendedorMaxima(int signal);
 void writeLogMessage (char *id , char *msg);
+void finalizarPrograma();
 int sacarNumero(char *id);
 void *usuarioEnActividad(void *id);
 void *accionesCoordinadorSocial();
@@ -51,8 +52,9 @@ int contadorSolicitudes;
 //Para saber cuantos hay en cola
 int contadorSolicitudesCola;
 int contadorActividadesCola;
-//Para saber 
+//Para saber si se ha cerrado la cola de solicitudes 
 int listaCerrada;
+//Tipo de atendedor 1->Invitacion 2->QR 3->PRO
 int tipoAtendedor[3]={1,2,3};
 
 /*
@@ -62,8 +64,6 @@ int tipoAtendedor[3]={1,2,3};
 int main(int argc, char **argv){
 	//Imprime el pid para poder utilizar el mandador
 	printf("Pid: %d\n",getpid());
-	//Tipo de atendedor 1->Invitacion 2->QR 3->PRO
-//	int tipoAtendedor[3]={1,2,3};
 	int i;
 	char buffer[100];
 	//Tratamiento de señales
@@ -121,12 +121,12 @@ int main(int argc, char **argv){
 		printf("Iniciando tsunami\n");
 		writeLogMessage("1","Iniciando tsunami");
 		pthread_create(&atendedor_1, NULL, accionesAtendedor, (void *) &tipoAtendedor[0]);
-		sprintf(buffer,"Atendedor_%d ha sido creado\n",tipoAtendedor[0]);
+		sprintf(buffer,"Atendedor_%d ha sido creado",tipoAtendedor[0]);
 		writeLogMessage ( "1" , buffer);
 		printf("Atendedor_%d ha sido creado\n",tipoAtendedor[0]);
 		//writeLogMessage("1","Atendedor_%d ha sido creado"tipoAtendedor[0]);
 		pthread_create(&atendedor_2, NULL, accionesAtendedor, (void *) &tipoAtendedor[1]);
-		sprintf(buffer,"Atendedor_%d ha sido creado\n",tipoAtendedor[1]);
+		sprintf(buffer,"Atendedor_%d ha sido creado",tipoAtendedor[1]);
 		writeLogMessage ( "1" , buffer);
 		printf("Atendedor_%d ha sido creado\n",tipoAtendedor[1]);
 		//writeLogMessage("1","Atendedor_%d ha sido creado",tipoAtendedor[1]);
@@ -157,7 +157,7 @@ void creadorAtendedoresPRO(int tipoAtendedor[]){
 	pthread_t atendedorPRO;
 	for(i = 0 ; i < numAtendedoresPRO ; i++){
 		pthread_create(&hiloAtendedores[i], NULL, accionesAtendedor, (void *) &idAtendedores[i]);
-		sprintf(buffer,"Atendedor_%d ha sido creado\n",idAtendedores[i]);
+		sprintf(buffer,"Atendedor_%d ha sido creado",idAtendedores[i]);
 		writeLogMessage ( "1" , buffer);
 		printf("Atendedor_%d ha sido creado\n",idAtendedores[i]);
 	}
@@ -207,18 +207,18 @@ void nuevaSolicitud(int signal){
 			//Introduzco el numero en el identificador de la solicitud
 			sprintf(solicitud->id,"solicitud_%d",valorId);
 				printf("%s añadida a la lista de solicitudes\n",solicitud->id);
-				sprintf(buffer, "%s añadida a la lista de solicitudes\n",solicitud->id);
+				sprintf(buffer, "%s añadida a la lista de solicitudes",solicitud->id);
 				printf("%s lista para ser atendida\n",solicitud->id);
-				sprintf(buffer, "%s lista para ser atendida\n",solicitud->id);
+				sprintf(buffer, "%s lista para ser atendida",solicitud->id);
 				//Indico el tipo de solicitud segun la senial
 				//Invitacion
 				if(signal == SIGUSR1){
 					printf("%s de invitacion\n",solicitud->id);
-					sprintf(buffer, "%s de invitacion\n",solicitud->id);
+					sprintf(buffer, "%s de invitacion",solicitud->id);
 				//QR
 				}else{
 					printf("%s por codigo QR\n",solicitud->id);
-					sprintf(buffer,"%s por codigo QR\n",solicitud->id);
+					sprintf(buffer,"%s por codigo QR",solicitud->id);
 				}
 			//Mando la solicitud para ser procesada
 			pthread_create(&solicitud->hilo, NULL, accionesSolicitud, (void *) solicitud);
@@ -227,17 +227,21 @@ void nuevaSolicitud(int signal){
 		}
 	}
 	//Cola llena o Cola de solicitudes cerrada
+	pthread_mutex_lock(&salir);
 	if((finPrograma == true) || (guardado == false)){
 		if(finPrograma == true){
+			pthread_mutex_unlock(&salir);
 			printf("Imposible entrar en la cola, ha sido cerrada\n");
-			sprintf(buffer,"Imposible entrar en la cola, ha sido cerrada\n");
+			sprintf(buffer,"Imposible entrar en la cola, ha sido cerrada");
 			writeLogMessage ( "FIN" , buffer);
 		}else{
+			pthread_mutex_unlock(&salir);
 			printf("Cola de solicitudes llena, Solicitud ignorada\n");
-			sprintf(buffer,"Cola de solicitudes llena, Solicitud ignorada\n");
+			sprintf(buffer,"Cola de solicitudes llena, Solicitud ignorada");
 			writeLogMessage ( "ERROR" , buffer);
 		}
 	}
+	pthread_mutex_unlock(&salir);
 }
 /**
  * Función que se encarga de las acciones de la solicitud
@@ -412,10 +416,9 @@ void *accionesAtendedor(void *ptrs){
 						printf("Atendedor_%d: la cola de solicitudes esta vacia y se procede a la finalizacion del programa\n",numero);
 						sprintf(salida,"la cola de solicitudes esta vacia y se procede a la finalizacion del programa");
 						writeLogMessage(atendedor,salida);
-						free(colaSolicitudes);
-						exit(0);//Se sale del programa
+						finalizarPrograma();
 				}
-				pthread_mutex_unlock(&mutexColaSolicitudes);
+				
 			}	
 			pthread_mutex_unlock(&salir);
 			//Se vigilan las iteraciones pares ya que en ellas se reinicia el tipo de evaluacion 
@@ -622,6 +625,7 @@ int salidaApta(){
 			output=false;
 		}
 	}
+	pthread_mutex_unlock(&mutexColaSolicitudes);
 	return output;
 }
 /**
@@ -691,4 +695,32 @@ void manejadoraAtendedorMaxima(int signal){
 		printf("El cambio no tendra repercusion en el programa. Introduca mas de 3 atendedores para incrementarlos.");
 		writeLogMessage("Main","El cambio no tendra repercusion en el programa. Introduca mas de 3 atendedores para incrementarlos.");
 	}
+}
+/**
+*@author Marcos Ferreras
+*Se encarga de liberar todos los recursos antes de finalizar el programa
+*/
+void finalizarPrograma(){
+	int valor=0;
+	free(idAtendedores);
+	free(hiloAtendedores);
+	free(colaSolicitudes);
+	
+	valor=pthread_mutex_destroy(&mutexLog);
+	/*if (valor!=0){
+		printf("Error al destruir mutex del Log %d!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+	}*/
+	valor=pthread_mutex_destroy(&mutexColaSolicitudes);
+	/*if (valor!=0){
+		printf("Error al destruir mutex de las solicitudes!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+	}*/
+	valor=pthread_mutex_destroy(&mutexColaSocial);
+	/*if (valor!=0){
+		printf("Error al destruir mutex social!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+	}*/
+	valor=pthread_mutex_destroy(&salir);
+	/*if (valor!=0){
+		printf("Error al destruir mutex de salir!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+	}*/
+	exit(0);//Se sale del programa
 }
