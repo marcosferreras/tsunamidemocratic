@@ -410,28 +410,27 @@ void *accionesAtendedor(void *ptrs){
 		apto=true;
 		cafe++;
 		do{
-			//Se comprueba si la cola esta cerrada y si lo esta se comprueba que haya usuarios remanentes para saber si puede finalizarse la aplicacion
-			pthread_mutex_unlock(&mutexColaSolicitudes);
-			pthread_mutex_lock(&salir);
-			if(finPrograma) {
-				if(salidaApta()){
-						printf("Atendedor_%d: la cola de solicitudes esta vacia y se procede a la finalizacion del programa\n",numero);
-						sprintf(salida,"la cola de solicitudes esta vacia y se procede a la finalizacion del programa");
-						writeLogMessage(atendedor,salida);
-						finalizarPrograma();
-				}
-				
-			}	
-			pthread_mutex_unlock(&salir);
+		
+			
 			//Se vigilan las iteraciones pares ya que en ellas se reinicia el tipo de evaluacion 
 			if(contador%2==0 || contador==0){
+					//Se comprueba si la cola esta cerrada y si lo esta se comprueba que haya usuarios remanentes para saber si puede finalizarse la aplicacion
+					pthread_mutex_lock(&salir);
+					if(finPrograma) {
+						if(salidaApta()){
+							printf("Atendedor_%d: la cola de solicitudes esta vacia y se procede a la finalizacion del programa\n",numero);
+							sprintf(salida,"la cola de solicitudes esta vacia y se procede a la finalizacion del programa");
+							writeLogMessage(atendedor,salida);
+							finalizarPrograma();
+						}						
+					}	
+					pthread_mutex_unlock(&salir);
 					if(tipoEvaluacionEstatica>2){
 						tipoEvaluacionEstatica=2;
 					}
 					tipoEvaluacion=tipoEvaluacionEstatica;
 					pthread_mutex_lock(&mutexColaSolicitudes);
-			}
-					
+			}	
 			contador++;
 			id=-1;
 			for(i=0;i<tamCola;i++){
