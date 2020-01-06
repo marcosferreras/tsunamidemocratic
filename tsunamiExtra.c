@@ -663,27 +663,28 @@ void manejadoraSolicitudMaxima(int signal){
 */
 
 void manejadoraAtendedorMaxima(int signal){
-	int tipo, numero, i;
-	pthread_t atendedorPROampliar;
+	int numero, i = 0;
 	char buffer[100];
 	
 	printf("\nIndique el numero de atendedoresPRO a ampliar\n\n");
 	scanf("%d", &numero);
 
-	int atendedoresPROampliar[numero];
+	idAtendedores = realloc(idAtendedores,sizeof(int)*(numAtendedoresPRO+numero));
+	hiloAtendedores = realloc(hiloAtendedores,sizeof(pthread_t)*(numAtendedoresPRO+numero));
 
 	if(numero>0){
 		
 		//Inicializo el vector de atendedoresPRO con sus IDs
 		for(i = 0; i < numero; i++){
-			atendedoresPROampliar[i] = i + numAtendedoresPRO + 3;
+			idAtendedores[i] = i + numAtendedoresPRO + 3;
+			hiloAtendedores[i] = i + numAtendedoresPRO + 3;
 		}
 
 		for(i = 0; i < numero; i++){
-			pthread_create(&atendedorPROampliar, NULL, accionesAtendedor, (void *) &tipoAtendedor[2]);
-			sprintf(buffer,"Atendedor_%d ha sido creado\n",atendedoresPROampliar[i]);
+			pthread_create(&hiloAtendedores[i], NULL, accionesAtendedor, (void *) &idAtendedores[i]);
+			sprintf(buffer,"Atendedor_%d ha sido creado\n",idAtendedores[i]);
 			writeLogMessage ( "1" , buffer);
-			printf("Atendedor_%d ha sido creado\n",atendedoresPROampliar[i]);
+			printf("Atendedor_%d ha sido creado\n",idAtendedores[i]);
 		}
 		numAtendedoresPRO = numero + numAtendedoresPRO;
 	} else {
