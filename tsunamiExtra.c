@@ -228,6 +228,7 @@ void nuevaSolicitud(int signal){
 			writeLogMessage ( solicitud->id , buffer);
 		}
 	}
+	pthread_mutex_unlock(&salir);
 	//Cola llena o Cola de solicitudes cerrada
 	pthread_mutex_lock(&salir);
 	if((finPrograma == true) || (guardado == false)){
@@ -671,14 +672,13 @@ void manejadoraAtendedorMaxima(int signal){
 	int numero, i = 0;
 	char buffer[100];
 	
-	printf("\nIndique el numero de atendedoresPRO a ampliar\n\n");
+	printf("\nIndique el numero de atendedoresPRO a ampliar\n");
 	scanf("%d", &numero);
-
-	idAtendedores = realloc(idAtendedores,sizeof(int)*(numAtendedoresPRO+numero));
-	hiloAtendedores = realloc(hiloAtendedores,sizeof(pthread_t)*(numAtendedoresPRO+numero));
-
+	pthread_mutex_lock(&mutexColaSolicitudes);
 	if(numero>0){
-		
+		idAtendedores = realloc(idAtendedores,sizeof(int)*(numAtendedoresPRO+numero));
+		hiloAtendedores = realloc(hiloAtendedores,sizeof(pthread_t)*(numAtendedoresPRO+numero));
+
 		//Inicializo el vector de atendedoresPRO con sus IDs
 		for(i = numAtendedoresPRO; i < numero+numAtendedoresPRO; i++){
 			idAtendedores[i] = i + 3;
@@ -692,8 +692,10 @@ void manejadoraAtendedorMaxima(int signal){
 			printf("Atendedor_%d ha sido creado\n",idAtendedores[i]);
 		}
 		numAtendedoresPRO = numero + numAtendedoresPRO;
+		pthread_mutex_unlock(&mutexColaSolicitudes);
 	} else {
-		printf("El cambio no tendra repercusion en el programa. Introduca mas de 3 atendedores para incrementarlos.");
+		pthread_mutex_unlock(&mutexColaSolicitudes);
+		printf("El cambio no tendra repercusion en el programa. Introduca mas de 3 atendedores para incrementarlos.\n");
 		writeLogMessage("Main","El cambio no tendra repercusion en el programa. Introduca mas de 3 atendedores para incrementarlos.");
 	}
 }
