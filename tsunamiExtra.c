@@ -175,8 +175,10 @@ void nuevaSolicitud(int signal){
 	int guardado = false;
 	//Variable para el numero de solicitud
 	int valorId = 0;
+	pthread_mutex_lock(&salir);
 	//Cola de solicitudes aun abierta
 	if(finPrograma == false){
+	pthread_mutex_unlock(&salir);
 	//Seccion Critica
 		pthread_mutex_lock(&mutexColaSolicitudes);
 		//Compruebo el espacio en la lista de solicitudes
