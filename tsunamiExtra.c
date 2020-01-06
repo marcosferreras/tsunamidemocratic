@@ -402,7 +402,6 @@ void *accionesAtendedor(void *ptrs){
 	//El tipo de solicitudes viene dado por el numero del atendedor en cuestion
 	int tipoEvaluacion,tipoEvaluacionEstatica, id, contador=0, calculo, espera, apto, posicion=0, cafe=0,i,numero=*(int *)ptrs;
 	char atendedor[25], salida[150];
-	printf("Atendedor_%d\n",numero);
 	sprintf(atendedor,"Atendedor_%d",numero);
 	tipoEvaluacionEstatica=*(int *)ptrs-1;
 	do{
@@ -639,7 +638,8 @@ void manejadoraSolicitudMaxima(int signal){
 	int numeroMovimientos, i;
 	printf("Para reformar la cola seleccione una cantidad + a ampliar\n");
 	scanf("%s",movimiento);
-	numeroMovimientos=atoi(movimiento);
+	if(atoi(movimiento)>0){
+		numeroMovimientos=atoi(movimiento);
 		pthread_mutex_lock(&mutexColaSolicitudes);
 		//Se genera una cola auxiliar para guardar los datos
 		Solicitud *colaAux = (Solicitud*)malloc(sizeof(Solicitud)*tamCola);
@@ -661,6 +661,11 @@ void manejadoraSolicitudMaxima(int signal){
 		pthread_mutex_unlock(&mutexColaSolicitudes);
 		printf("Cola de solicitudes ampliada\n");
 		writeLogMessage ( "Main" , "La cola de solicitudes ha sido ampliada");
+	} else {
+		pthread_mutex_unlock(&mutexColaSolicitudes);
+		printf("El cambio no tendra repercusion en el programa.\n");
+		writeLogMessage("Main","El cambio no tendra repercusion en el programa.");
+	}
 }
 
 /**
@@ -708,22 +713,9 @@ void finalizarPrograma(){
 	free(idAtendedores);
 	free(hiloAtendedores);
 	free(colaSolicitudes);
-	
 	valor=pthread_mutex_destroy(&mutexLog);
-	/*if (valor!=0){
-		printf("Error al destruir mutex del Log %d!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-	}*/
 	valor=pthread_mutex_destroy(&mutexColaSolicitudes);
-	/*if (valor!=0){
-		printf("Error al destruir mutex de las solicitudes!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-	}*/
 	valor=pthread_mutex_destroy(&mutexColaSocial);
-	/*if (valor!=0){
-		printf("Error al destruir mutex social!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-	}*/
 	valor=pthread_mutex_destroy(&salir);
-	/*if (valor!=0){
-		printf("Error al destruir mutex de salir!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-	}*/
 	exit(0);//Se sale del programa
 }
