@@ -517,7 +517,7 @@ void *accionesCoordinadorSocial(){
 		pthread_cond_wait(&condActividades, &mutexColaSocial);
 
 		listaCerrada = true;
-		writeLogMessage("", "Lista cerrada");
+		writeLogMessage("Coordinador_Social", "Lista cerrada");
 
 
 		pthread_create(&usuario1, NULL, usuarioEnActividad, (void *) &idUsuariosActividad[0]);
@@ -529,7 +529,7 @@ void *accionesCoordinadorSocial(){
 		pthread_cond_wait(&condActividades, &mutexColaSocial);
 
 		listaCerrada = false;
-		writeLogMessage("", "Lista abierta de nuevo");
+		writeLogMessage("Coordinador_Social", "Lista abierta de nuevo");
 
 		pthread_mutex_unlock(&mutexColaSocial);
 	}
